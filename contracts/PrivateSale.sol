@@ -70,7 +70,7 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
     bonusHolders[msg.sender] = 0;
   }
 
-
+  // Binance token contribution
   function contributeInBNB() public isInvestorWhitelisted(msg.sender) whenNotPaused onlyWhileOpen {
     uint allowance = BNBToken.allowance(msg.sender, this);
     BNBToken.transferFrom(msg.sender, this, allowance);
@@ -85,16 +85,19 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
     bonusTokensSold = bonusTokensSold.add(bonus);
   }
 
+  // ETH USD is the price of 1 ETH in cents
   function setETH_USDPrice(uint _ETH_USD) public whenNotPaused onlyAdmin {
     require(_ETH_USD > 0);
     ETH_USD = _ETH_USD;
   }
 
+  // _BNB_USD is the price of 1 whole(10*18) BNB token in cents
   function setBNB_USDPrice(uint _BNB_USD) public whenNotPaused onlyAdmin {
     require(_BNB_USD > 0);
     BNB_USD = _BNB_USD;
   }
 
+  // _minContributionInUSD is minimum contribution allowed in cents
   function setMinimumContribution(uint _minContributionInUSD) public whenNotPaused onlyAdmin {
     require(_minContributionInUSD > 0);
     minContributionInUSD = _minContributionInUSD;
@@ -126,7 +129,7 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
     super._processPurchase(_beneficiary, _tokenAmount);
   }
 
-  // TODO: change this from hardcoded;
+  // TODO: change this from hardcoded to an array of bonuses;
   function calculateBonus(uint _tokenAmount, uint _USD) public view returns (uint256) {
     if(_USD < 1500000) {
       return 0;
@@ -153,10 +156,10 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
     return _weiAmount.mul(ETH_USD).div(tokenPrice).div(10**18);
   }
 
-  function changeMaxTokens(uint _newMaxTokens) public whenNotPaused onlyAdmin {
-    uint diff = _newMaxTokens.sub(maxTokensAvailable);
-    require(diff > 0);
-    token.transferFrom(msg.sender, this, diff);
+  function increaseMaxTokensForSale() public whenNotPaused onlyAdmin {
+    uint allowance = token.allowance(msg.sender, this)
+    maxTokensAvailable = maxTokensAvailable.add(allowance);
+    token.transferFrom(msg.sender, this, allowance);
   }
 
   function getTokenAmountForWei(uint256 _weiAmount) public view returns (uint256) {
