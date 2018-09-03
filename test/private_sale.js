@@ -179,8 +179,8 @@ contract('Private sale', function(accounts) {
     })
     it('should convert to USD', async () => {
       const tokenCost = [30000, 20000, 1100, 29340];
-      const amount = [ether(1), ether(2), ether(3), ether(0.5)];
-      const expectedUSD = [30000, 40000, 3300, 29340/2];
+      const amount = [ether(1), ether(2), ether(3), ether(0.5432)];
+      const expectedUSD = [30000, 40000, 3300, Math.round(29340*0.5432)];
       for(let i=0;i<tokenCost.length;i++) {
         let USD = await privateSale.convertToUSD(amount[i], tokenCost[i]);
         assert(USD.toNumber() == expectedUSD[i]);
