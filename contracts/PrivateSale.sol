@@ -15,7 +15,13 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
   uint private amountInUSD; // to track the current contribution
   uint public minContributionInUSD; //in cents
   uint public ICOEndDate;
+  bool public initialized;
   mapping(address => uint) public bonusHolders;
+  uint[10] public bonusPercentages;
+  uint constant bonusMaxLength = 10;
+  uint public bonusLength;
+  uint[10] public bonusContributions;
+
 
   modifier isInvestorWhitelisted(address _investor) {
     if(!KYC[_investor]) {
@@ -24,22 +30,27 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
     _;
   }
 
-  constructor(uint _startTime, uint _endTime, uint _tokenPrice, uint _ETH_USD, uint _BNB_USD, ERC20 _BNBToken, ERC20 _token, uint _maxTokensAvailable, uint _minContributionInUSD) public
+  constructor(uint _startTime, uint _endTime, uint _tokenPrice, uint _ETH_USD, uint _BNB_USD, ERC20 _BNBToken, ERC20 _token, uint _minContributionInUSD) public
   TimedCrowdsale(_startTime, _endTime) Crowdsale(1, msg.sender, _token) {
     require(_tokenPrice > 0);
-    require(_maxTokensAvailable > 0);
     require(_minContributionInUSD > 0);
     require(_BNB_USD > 0);
     require(_ETH_USD > 0);
     tokenPrice = _tokenPrice;
     ETH_USD = _ETH_USD;
     BNB_USD = _BNB_USD;
-    maxTokensAvailable = _maxTokensAvailable;
     BNBToken = _BNBToken;
-    minContributionInUSD = minContributionInUSD;
+    minContributionInUSD = _minContributionInUSD;
   }
 
-  function setTokenPrice(uint _tokenPrice) public whenNotPaused onlyAdmin {
+  function initializePrivateSale(uint[] _contributions, uint[] _bonusPercentages) {
+    require(!initialized);
+    setBonuses(_contributions, _bonusPercentages);
+    increaseMaxTokensForSale();
+    initialized = true;
+  }
+
+  function setTokenPrice(uint _tokenPrice) public onlyAdmin whenNotPaused {
     require(_tokenPrice > 0);
     tokenPrice = _tokenPrice;
   }
@@ -68,6 +79,15 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
     require(bonusHolders[msg.sender] > 0);
     token.transfer(msg.sender, bonusHolders[msg.sender]);
     bonusHolders[msg.sender] = 0;
+  }
+
+  function setBonuses(uint[] _contributions, uint[] _bonus) onlyAdmin public {
+    require(_contributions.length == _bonus.length  && _bonus.length <= bonusMaxLength);
+    for(uint256 i=0; i < _contributions.length; i++) {
+      bonusContributions[i] = _contributions[i];
+      bonusPercentages[i] = _bonus[i];
+    }
+    bonusLength = _contributions.length;
   }
 
   // Binance token contribution
@@ -103,16 +123,14 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
     minContributionInUSD = _minContributionInUSD;
   }
 
-
-
-  function addAddressToKYC(address _investor) public whenNotPaused onlyAdmin {
+  function addAddressToKYC(address _investor) external whenNotPaused onlyAdmin {
     require(_investor!=address(0));
     if(!KYC[_investor]) {
       KYC[_investor] = true;
     }
   }
 
-  function addAddressesToKYC(address[] _investors) public whenNotPaused onlyAdmin {
+  function addAddressesToKYC(address[] _investors) external whenNotPaused onlyAdmin {
     for(uint8 i=0;i<_investors.length;i++) {
       if(_investors[i] != address(0) && !KYC[_investors[i]]) {
         KYC[_investors[i]] = true;
@@ -130,19 +148,21 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
   }
 
   // TODO: change this from hardcoded to an array of bonuses;
-  function calculateBonus(uint _tokenAmount, uint _USD) public view returns (uint256) {
-    if(_USD < 1500000) {
-      return 0;
-    } else if(_USD >= 1500000 && _USD <= 10000000) {
-      return _tokenAmount.mul(35).div(100);
-    } else if(_USD > 10000000 && _USD <= 25000000) {
-      return _tokenAmount.mul(40).div(100);
-    } else if(_USD > 25000000) {
-      return _tokenAmount.mul(50).div(100);
-    }
-  }
+  // TODO: change this from hardcoded to an array of bonuses;
+ function calculateBonus(uint _tokenAmount, uint _USD) public view returns (uint256) {
+   if(_USD >= 25000000) {
+     return _tokenAmount.mul(50).div(100);
+   } else if(_USD >= 10000000) {
+     return _tokenAmount.mul(40).div(100);
+   } else if(_USD >=1500000){
+     return _tokenAmount.mul(35).div(100);
+   } else {
+     return 0;
+   }
+ }
 
   function _preValidatePurchase(address _beneficiary, uint256 _weiAmount) internal  whenNotPaused isInvestorWhitelisted(_beneficiary) {
+    require(initialized);
     amountInUSD = convertToUSD(_weiAmount, ETH_USD);
     require(amountInUSD >= minContributionInUSD);
     super._preValidatePurchase(_beneficiary, _weiAmount);
@@ -153,11 +173,11 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
   }
 
   function _getTokenAmount(uint256 _weiAmount) internal view returns (uint256) {
-    return _weiAmount.mul(ETH_USD).div(tokenPrice).div(10**18);
+    return _weiAmount.mul(ETH_USD).div(tokenPrice);
   }
 
   function increaseMaxTokensForSale() public whenNotPaused onlyAdmin {
-    uint allowance = token.allowance(msg.sender, this)
+    uint allowance = token.allowance(msg.sender, this);
     maxTokensAvailable = maxTokensAvailable.add(allowance);
     token.transferFrom(msg.sender, this, allowance);
   }
