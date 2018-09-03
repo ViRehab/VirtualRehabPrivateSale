@@ -17,10 +17,7 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
   uint public ICOEndDate;
   bool public initialized;
   mapping(address => uint) public bonusHolders;
-  uint[10] public bonusPercentages;
-  uint constant bonusMaxLength = 10;
-  uint public bonusLength;
-  uint[10] public bonusContributions;
+
 
   event addedKYCInvestor(address indexed _investor);
   event removedKYCInvestor(address indexed _investor);
@@ -54,9 +51,8 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
     minContributionInUSD = _minContributionInUSD;
   }
 
-  function initializePrivateSale(uint[] _contributions, uint[] _bonusPercentages) {
+  function initializePrivateSale() {
     require(!initialized);
-    setBonuses(_contributions, _bonusPercentages);
     increaseMaxTokensForSale();
     initialized = true;
     emit SaleInitialized();
@@ -95,15 +91,6 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
     emit BonusWithdrawn(bonusHolders[msg.sender], msg.sender);
     token.transfer(msg.sender, bonusHolders[msg.sender]);
     bonusHolders[msg.sender] = 0;
-  }
-
-  function setBonuses(uint[] _contributions, uint[] _bonus) onlyAdmin public {
-    require(_contributions.length == _bonus.length  && _bonus.length <= bonusMaxLength);
-    for(uint256 i=0; i < _contributions.length; i++) {
-      bonusContributions[i] = _contributions[i];
-      bonusPercentages[i] = _bonus[i];
-    }
-    bonusLength = _contributions.length;
   }
 
   // Binance token contribution
