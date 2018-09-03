@@ -349,6 +349,76 @@ contract('Private sale', function(accounts) {
     });
   });
 
+  describe('BNB token contribution', () => {
+    let privateSale;
+    let erc20;
+    let endingTime;
+    let bonus;
+    let BNBToken;
+    beforeEach(async () => {
+      const openingTime = await latestTime() + 10;
+      endingTime = openingTime + duration.days(10);
+      const tokenPrice = 10;
+      const ETH_USD = 3000000;
+      const BNB_USD = 1100;
+      const minContributionInUSD = 1100;
+      const contributions = [1500000, 10000000, 25000000];
+      const bonusPercentages = [35, 40, 50];
+      BNBToken = await Token.new(accounts[1], ether(15000/11 + 9090.9090909091 + 250000/11))
+      erc20 = await Token.new(accounts[0], ether(7000000));
+      privateSale = await PrivateSale.new(openingTime, endingTime, tokenPrice, ETH_USD, BNB_USD, BNBToken.address, erc20.address, minContributionInUSD);
+      await erc20.approve(privateSale.address, ether(7000000));
+      await privateSale.initializePrivateSale(contributions, bonusPercentages);
+      await increaseTimeTo(openingTime + 10);
+      await privateSale.addAddressToKYC(accounts[1]);
+    });
+
+    it('should accept BNB Token', async () => {
+      await BNBToken.approve(privateSale.address, ether(15000/11), { from: accounts[1] });
+      await privateSale.contributeInBNB({ from: accounts[1] });
+      let balance = await erc20.balanceOf(accounts[1]);
+      balance.should.be.bignumber.equal(ether(150000));
+      let totalTokensSold = await privateSale.totalTokensSold();
+      let bonus = ether(150000 * 0.35);
+      let bonusAssigned = await privateSale.bonusHolders(accounts[1]);
+      totalTokensSold.should.be.bignumber.equal(bonus.add(balance));
+      let BNB_balance = await BNBToken.balanceOf(privateSale.address);
+      BNB_balance.should.be.bignumber.equal(ether(15000/11));
+    });
+
+    it('different bonus', async () => {
+      const _accounts = [accounts[2], accounts[3]];
+      const _value = [ether(15000/11),  ether(250000/11)];
+      const tokenBalances = [ether(150000), ether(2500000)];
+      const bonuses = [ether(150000 * 0.35), ether(2500000 * 0.50)];
+      await privateSale.addAddressesToKYC(_accounts);
+      for(let i=0;i<_accounts.length;i++) {
+        await BNBToken.transfer(_accounts[i], _value[i], { from: accounts[1] });
+        await BNBToken.approve(privateSale.address, _value[i], {from: _accounts[i]});
+        await privateSale.contributeInBNB({ from: _accounts[i] });
+        let b = await erc20.balanceOf(_accounts[i]);
+        b.should.be.bignumber.equal(tokenBalances[i]);
+        let bonus = await privateSale.bonusHolders(_accounts[i]);
+        bonus.should.be.bignumber.equal(bonuses[i]);
+      }
+    })
+
+    it('should not accept from non whitelisted', async () => {
+      assert(await privateSale.KYC(accounts[2]) == false);
+      await BNBToken.transfer(accounts[2], ether(3000), { from: accounts[1] });
+      await BNBToken.approve(privateSale.address, ether(3000));
+      await privateSale.contributeInBNB({ from: accounts[1] }).should.be.rejectedWith(EVMRevert);
+    })
+
+    it('should not accept from non whitelisted', async () => {
+      assert(await privateSale.KYC(accounts[2]) == false);
+      await BNBToken.transfer(accounts[2], ether(3000), { from: accounts[1] });
+      await BNBToken.approve(privateSale.address, ether(3000));
+      await privateSale.contributeInBNB({ from: accounts[1] }).should.be.rejectedWith(EVMRevert);
+    });
+
+  });
+
   describe('Finalization', () => {
     let privateSale;
     let erc20;

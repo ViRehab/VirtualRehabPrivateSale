@@ -113,7 +113,7 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
     amountInUSD = convertToUSD(allowance, BNB_USD);
     require(amountInUSD >= minContributionInUSD);
     uint numTokens = amountInUSD.mul(10**18).div(tokenPrice);
-    uint bonus = calculateBonus(amountInUSD, numTokens);
+    uint bonus = calculateBonus(numTokens, amountInUSD);
     require(totalTokensSold.add(numTokens).add(bonus) <= maxTokensAvailable);
     token.transfer(msg.sender, numTokens);
     assignBonus(msg.sender, bonus);
