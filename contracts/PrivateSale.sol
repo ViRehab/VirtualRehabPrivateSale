@@ -1,14 +1,13 @@
 pragma solidity 0.4.24;
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/crowdsale/distribution/FinalizableCrowdsale.sol";
-import "./CustomPausable.sol";
+import "./CustomWhitelist.sol";
+import "./EtherPrice.sol";
+import "./BinanceCoinPrice.sol";
 
-contract PrivateSale is FinalizableCrowdsale, CustomPausable {
-
+contract PrivateSale is EtherPrice, BinanceCoinPrice, BonusHolder, FinalizableCrowdsale, CustomWhitelist {
   uint public tokenPrice; //price of the 1 token in cents
-  uint public ETH_USD; //price of 1 ETH in cents
-  uint public BNB_USD;
-  ERC20 public BNBToken;
-  mapping(address => bool) public KYC;
+  ERC20 public BinanceCoin;
   uint public totalTokensSold;
   uint public bonusTokensSold;
   uint public maxTokensAvailable;
@@ -16,38 +15,27 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
   uint public minContributionInUSD; //in cents
   uint public ICOEndDate;
   bool public initialized;
-  mapping(address => uint) public bonusHolders;
 
 
-  event addedKYCInvestor(address indexed _investor);
-  event removedKYCInvestor(address indexed _investor);
   event TokenPriceChanged(uint _newPrice, uint _oldPrice);
   event MinimumContributionChanged(uint _newContribution, uint _oldContribution);
-  event ETHUSDPriceChanged(uint _newPrice, uint _oldPrice);
-  event BNBUSDPriceChanged(uint _newPrice, uint _oldPrice);
   event SaleInitialized();
   event ICODateSet(uint _icoDate);
   event FundsWithdrawn(uint _amount, address _msgSender);
-  event BonusWithdrawn(uint _tokenAmount, address _msgSender);
   event TokensAddedToSale(uint _newAllowance, uint _oldAllowance);
 
-  modifier isInvestorWhitelisted(address _investor) {
-    if(!KYC[_investor]) {
-      revert();
-    }
-    _;
-  }
 
-  constructor(uint _startTime, uint _endTime, uint _tokenPrice, uint _ETH_USD, uint _BNB_USD, ERC20 _BNBToken, ERC20 _token, uint _minContributionInUSD) public
-  TimedCrowdsale(_startTime, _endTime) Crowdsale(1, msg.sender, _token) {
+  constructor(uint _startTime, uint _endTime, uint _tokenPrice, uint _etherPriceInCents, uint _binanceCoinPriceInCents, ERC20 _BinanceCoin, ERC20 _token, uint _minContributionInUSD) public
+  TimedCrowdsale(_startTime, _endTime) Crowdsale(1, msg.sender, _token)
+  EtherPrice(_etherPriceInCents)
+  BinanceCoinPrice(_binanceCoinPriceInCents)
+  BonusHolder(_token) {
     require(_tokenPrice > 0);
     require(_minContributionInUSD > 0);
-    require(_BNB_USD > 0);
-    require(_ETH_USD > 0);
+    require(_binanceCoinPriceInCents > 0);
     tokenPrice = _tokenPrice;
-    ETH_USD = _ETH_USD;
-    BNB_USD = _BNB_USD;
-    BNBToken = _BNBToken;
+    binanceCoinPriceInCents = _binanceCoinPriceInCents;
+    BinanceCoin = _BinanceCoin;
     minContributionInUSD = _minContributionInUSD;
   }
 
@@ -74,30 +62,18 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
     ICOEndDate = _endTime;
     emit ICODateSet(_endTime);
   }
+
   function withdrawFunds(uint _amount) public whenNotPaused onlyAdmin {
     require(_amount <= address(this).balance);
     msg.sender.transfer(_amount);
     emit FundsWithdrawn(_amount, msg.sender);
   }
 
-  function assignBonus(address _investor, uint _tokenAmount) internal {
-    bonusHolders[_investor] = bonusHolders[_investor].add(_tokenAmount);
-  }
-
-  function withdrawBonus() public whenNotPaused {
-    require(ICOEndDate != 0);
-    require(now > ICOEndDate + 90 days); // 3 months
-    require(bonusHolders[msg.sender] > 0);
-    emit BonusWithdrawn(bonusHolders[msg.sender], msg.sender);
-    token.transfer(msg.sender, bonusHolders[msg.sender]);
-    bonusHolders[msg.sender] = 0;
-  }
-
   // Binance token contribution
   function contributeInBNB() public isInvestorWhitelisted(msg.sender) whenNotPaused onlyWhileOpen {
-    uint allowance = BNBToken.allowance(msg.sender, this);
-    BNBToken.transferFrom(msg.sender, this, allowance);
-    amountInUSD = convertToUSD(allowance, BNB_USD);
+    uint allowance = BinanceCoin.allowance(msg.sender, this);
+    BinanceCoin.transferFrom(msg.sender, this, allowance);
+    amountInUSD = convertToUSD(allowance, binanceCoinPriceInCents);
     require(amountInUSD >= minContributionInUSD);
     uint numTokens = amountInUSD.mul(10**18).div(tokenPrice);
     uint bonus = calculateBonus(numTokens, amountInUSD);
@@ -108,60 +84,12 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
     bonusTokensSold = bonusTokensSold.add(bonus);
   }
 
-  // ETH USD is the price of 1 ETH in cents
-  function setETH_USDPrice(uint _ETH_USD) public whenNotPaused onlyAdmin {
-    require(_ETH_USD > 0);
-    emit ETHUSDPriceChanged(_ETH_USD, ETH_USD);
-    ETH_USD = _ETH_USD;
-
-  }
-
-  // _BNB_USD is the price of 1 whole(10*18) BNB token in cents
-  function setBNB_USDPrice(uint _BNB_USD) public whenNotPaused onlyAdmin {
-    require(_BNB_USD > 0);
-    emit BNBUSDPriceChanged(_BNB_USD, BNB_USD);
-    BNB_USD = _BNB_USD;
-  }
 
   // _minContributionInUSD is minimum contribution allowed in cents
   function setMinimumContribution(uint _minContributionInUSD) public whenNotPaused onlyAdmin {
     require(_minContributionInUSD > 0);
     emit MinimumContributionChanged(minContributionInUSD, _minContributionInUSD);
     minContributionInUSD = _minContributionInUSD;
-  }
-
-  function addAddressToKYC(address _investor) external whenNotPaused onlyAdmin {
-    require(_investor!=address(0));
-    if(!KYC[_investor]) {
-      KYC[_investor] = true;
-      emit addedKYCInvestor(_investor);
-    }
-  }
-
-  function addAddressesToKYC(address[] _investors) external whenNotPaused onlyAdmin {
-    for(uint8 i=0;i<_investors.length;i++) {
-      if(_investors[i] != address(0) && !KYC[_investors[i]]) {
-        KYC[_investors[i]] = true;
-        emit addedKYCInvestor(_investors[i]);
-      }
-    }
-  }
-
-  function removeAddressFromKYC(address _investor) external whenNotPaused onlyAdmin {
-    require(_investor != address(0));
-    if(KYC[_investor]) {
-      KYC[_investor] = false;
-      emit removedKYCInvestor(_investor);
-    }
-  }
-
-  function removeAddressesFromKYC(address[] _investors) external whenNotPaused onlyAdmin {
-    for(uint8 i=0;i<_investors.length;i++) {
-      if(_investors[i] != address(0) && KYC[_investors[i]]) {
-        KYC[_investors[i]] = false;
-        emit removedKYCInvestor(_investors[i]);
-      }
-    }
   }
 
   function _processPurchase(address _beneficiary, uint256 _tokenAmount) internal {
@@ -189,7 +117,7 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
 
   function _preValidatePurchase(address _beneficiary, uint256 _weiAmount) internal  whenNotPaused isInvestorWhitelisted(_beneficiary) {
     require(initialized);
-    amountInUSD = convertToUSD(_weiAmount, ETH_USD);
+    amountInUSD = convertToUSD(_weiAmount, etherPriceInCents);
     require(amountInUSD >= minContributionInUSD);
     super._preValidatePurchase(_beneficiary, _weiAmount);
   }
@@ -199,7 +127,7 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
   }
 
   function _getTokenAmount(uint256 _weiAmount) internal view returns (uint256) {
-    return _weiAmount.mul(ETH_USD).div(tokenPrice);
+    return _weiAmount.mul(etherPriceInCents).div(tokenPrice);
   }
 
   function increaseMaxTokensForSale() public whenNotPaused onlyAdmin {
