@@ -191,10 +191,22 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
     require(t.transfer(msg.sender, t.balanceOf(this)));
   }
 
-  function finalization() internal {
+  function finalizeCrowdsale() public onlyAdmin {
+    require(!isFinalized);
+    require(hasClosed());
     uint unsold = token.balanceOf(this).sub(bonusTokensSold);
     if(unsold > 0) {
       token.transfer(msg.sender, unsold);
     }
+    emit Finalized();
+    isFinalized = true;
+  }
+
+  function hasClosed() public view returns (bool) {
+    return (totalTokensSold >= maxTokensAvailable) || super.hasClosed();
+  }
+
+  function finalization() internal {
+    revert();
   }
 }
