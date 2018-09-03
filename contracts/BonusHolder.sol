@@ -1,10 +1,10 @@
 pragma solidity 0.4.24;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "./CustomPausable.sol";
 
 contract BonusHolder is CustomPausable {
   using SafeMath for uint256;
-
   mapping(address => uint256) public bonusHolders;
   uint256 public releaseDate;
   ERC20 private token;
@@ -22,7 +22,7 @@ contract BonusHolder is CustomPausable {
 
     releaseDate = _releaseDate;
     emit BonusReleaseDateSet(_releaseDate);
-  }  
+  }
 
   function assignBonus(address _investor, uint256 _tokenAmount) internal {
     bonusHolders[_investor] = bonusHolders[_investor].add(_tokenAmount);

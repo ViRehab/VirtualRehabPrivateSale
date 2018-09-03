@@ -66,10 +66,10 @@ contract('Private sale', function(accounts) {
 
 
     it('only admin can set ICO End date', async () => {
-      const ICOEndDate = (await latestTime()) + 1000;
-      await privateSale.setICOEndDate(ICOEndDate);
-      assert((await privateSale.ICOEndDate()).toNumber() == ICOEndDate);
-      await privateSale.setICOEndDate(ICOEndDate).should.be.rejectedWith(EVMRevert);
+      const releaseDate = (await latestTime()) + 1000;
+      await privateSale.setReleaseDate(releaseDate);
+      assert((await privateSale.releaseDate()).toNumber() == releaseDate);
+      await privateSale.setReleaseDate(releaseDate).should.be.rejectedWith(EVMRevert);
     });
 
     it('only admin can set ETH USD price', async () => {
@@ -308,20 +308,27 @@ contract('Private sale', function(accounts) {
     });
 
     it('bonus cannot be claimed before icoDate is set', async () => {
-      ((await privateSale.ICOEndDate()).toNumber() == 0);
+      ((await privateSale.releaseDate()).toNumber() == 0);
       await privateSale.withdrawBonus({from:accounts[1]}).should.be.rejectedWith(EVMRevert);
     });
 
-    it('bonus can be claimed only after 3 months after the ICO date is set', async () => {
-      asset(false, "Please update the test case.")
+    it('bonus can be claimed only release date is set', async () => {
+      let ICOEndDate = endingTime + 10;
+      await privateSale.setReleaseDate(ICOEndDate);
+      await increaseTimeTo(ICOEndDate + 10);
+      let b  = await erc20.balanceOf(accounts[1]);
+      let bonus = await privateSale.bonusHolders(accounts[1]);
+
+      await privateSale.withdrawBonus({ from: accounts[1] });
+      (await erc20.balanceOf(accounts[1])).should.be.bignumber.equal(b.add(bonus));
+      assert((await privateSale.bonusHolders(accounts[1])).toNumber() == 0);
     })
 
     it('bonus can be claimed only by assigned holders', async () => {
       let currentTime = await latestTime();
       let ICOEndDate = currentTime + 10;
-      await privateSale.setICOEndDate(ICOEndDate);
+      await privateSale.setReleaseDate(ICOEndDate);
       await increaseTimeTo(ICOEndDate + duration.weeks(4*4));
-      let oldBalance = await erc20.balanceOf(accounts[1]);
       await privateSale.withdrawBonus({from: accounts[2]}).should.be.rejectedWith(EVMRevert);
     });
   });

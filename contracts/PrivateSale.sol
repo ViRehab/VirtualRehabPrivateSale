@@ -4,6 +4,7 @@ import "openzeppelin-solidity/contracts/crowdsale/distribution/FinalizableCrowds
 import "./CustomWhitelist.sol";
 import "./EtherPrice.sol";
 import "./BinanceCoinPrice.sol";
+import "./BonusHolder.sol";
 
 contract PrivateSale is EtherPrice, BinanceCoinPrice, BonusHolder, FinalizableCrowdsale, CustomWhitelist {
   uint public tokenPrice; //price of the 1 token in cents
@@ -13,14 +14,13 @@ contract PrivateSale is EtherPrice, BinanceCoinPrice, BonusHolder, FinalizableCr
   uint public maxTokensAvailable;
   uint private amountInUSD; // to track the current contribution
   uint public minContributionInUSD; //in cents
-  uint public ICOEndDate;
   bool public initialized;
 
 
   event TokenPriceChanged(uint _newPrice, uint _oldPrice);
   event MinimumContributionChanged(uint _newContribution, uint _oldContribution);
   event SaleInitialized();
-  event ICODateSet(uint _icoDate);
+
   event FundsWithdrawn(uint _amount, address _msgSender);
   event TokensAddedToSale(uint _newAllowance, uint _oldAllowance);
 
@@ -56,12 +56,6 @@ contract PrivateSale is EtherPrice, BinanceCoinPrice, BonusHolder, FinalizableCr
 
   }
 
-  function setICOEndDate(uint _endTime) public onlyAdmin whenNotPaused {
-    require(_endTime > now);
-    require(ICOEndDate == 0);
-    ICOEndDate = _endTime;
-    emit ICODateSet(_endTime);
-  }
 
   function withdrawFunds(uint _amount) public whenNotPaused onlyAdmin {
     require(_amount <= address(this).balance);
