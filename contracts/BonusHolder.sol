@@ -17,7 +17,7 @@ contract BonusHolder is CustomPausable {
   }
 
   function setReleaseDate(uint256 _releaseDate) public onlyAdmin whenNotPaused {
-    require(_releaseDate == 0);
+    require(releaseDate == 0);
     require(_releaseDate > now);
 
     releaseDate = _releaseDate;
