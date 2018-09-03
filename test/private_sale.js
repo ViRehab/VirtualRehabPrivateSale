@@ -122,6 +122,20 @@ contract('Private sale', function(accounts) {
       }
       await privateSale.addAddressesToKYC(investors, { from: accounts[1] }).should.be.rejectedWith(EVMRevert);
     });
+
+    it('only admin can remove address from KYC', async () => {
+      const investor =  accounts[4];
+      const investor2 = accounts[5];
+      await privateSale.addAddressToKYC(investor);
+      await privateSale.addAddressToKYC(investor2);
+
+      await privateSale.removeAddressFromKYC(investor, { from: accounts[4] }).should.be.rejectedWith(EVMRevert);
+      await privateSale.removeAddressFromKYC(investor);
+      assert(await privateSale.KYC(investor) == false);
+      await privateSale.removeAddressesFromKYC([investor2], { from: accounts[1] }).should.be.rejectedWith(EVMRevert);
+      await privateSale.removeAddressesFromKYC([investor2]);
+      assert(await privateSale.KYC(investor2) == false);
+    });
     it('only admin can change the max tokens for sale', async () => {
       await erc20.approve(privateSale.address, ether(20));
       const maxTokensAvailable = await privateSale.maxTokensAvailable();

@@ -22,6 +22,17 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
   uint public bonusLength;
   uint[10] public bonusContributions;
 
+  event addedKYCInvestor(address indexed _investor);
+  event removedKYCInvestor(address indexed _investor);
+  event TokenPriceChanged(uint _newPrice, uint _oldPrice);
+  event MinimumContributionChanged(uint _newContribution, uint _oldContribution);
+  event ETHUSDPriceChanged(uint _newPrice, uint _oldPrice);
+  event BNBUSDPriceChanged(uint _newPrice, uint _oldPrice);
+  event SaleInitialized();
+  event ICODateSet(uint _icoDate);
+  event FundsWithdrawn(uint _amount, address _msgSender);
+  event BonusWithdrawn(uint _tokenAmount, address _msgSender);
+  event TokensAddedToSale(uint _newAllowance, uint _oldAllowance);
 
   modifier isInvestorWhitelisted(address _investor) {
     if(!KYC[_investor]) {
@@ -48,10 +59,12 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
     setBonuses(_contributions, _bonusPercentages);
     increaseMaxTokensForSale();
     initialized = true;
+    emit SaleInitialized();
   }
 
   function setTokenPrice(uint _tokenPrice) public onlyAdmin whenNotPaused {
     require(_tokenPrice > 0);
+    emit TokenPriceChanged(_tokenPrice, tokenPrice);
     tokenPrice = _tokenPrice;
   }
 
@@ -63,10 +76,12 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
     require(_endTime > now);
     require(ICOEndDate == 0);
     ICOEndDate = _endTime;
+    emit ICODateSet(_endTime);
   }
   function withdrawFunds(uint _amount) public whenNotPaused onlyAdmin {
     require(_amount <= address(this).balance);
     msg.sender.transfer(_amount);
+    emit FundsWithdrawn(_amount, msg.sender);
   }
 
   function assignBonus(address _investor, uint _tokenAmount) internal {
@@ -77,6 +92,7 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
     require(ICOEndDate != 0);
     require(now > ICOEndDate + 90 days); // 3 months
     require(bonusHolders[msg.sender] > 0);
+    emit BonusWithdrawn(bonusHolders[msg.sender], msg.sender);
     token.transfer(msg.sender, bonusHolders[msg.sender]);
     bonusHolders[msg.sender] = 0;
   }
@@ -108,18 +124,22 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
   // ETH USD is the price of 1 ETH in cents
   function setETH_USDPrice(uint _ETH_USD) public whenNotPaused onlyAdmin {
     require(_ETH_USD > 0);
+    emit ETHUSDPriceChanged(_ETH_USD, ETH_USD);
     ETH_USD = _ETH_USD;
+
   }
 
   // _BNB_USD is the price of 1 whole(10*18) BNB token in cents
   function setBNB_USDPrice(uint _BNB_USD) public whenNotPaused onlyAdmin {
     require(_BNB_USD > 0);
+    emit BNBUSDPriceChanged(_BNB_USD, BNB_USD);
     BNB_USD = _BNB_USD;
   }
 
   // _minContributionInUSD is minimum contribution allowed in cents
   function setMinimumContribution(uint _minContributionInUSD) public whenNotPaused onlyAdmin {
     require(_minContributionInUSD > 0);
+    emit MinimumContributionChanged(minContributionInUSD, _minContributionInUSD);
     minContributionInUSD = _minContributionInUSD;
   }
 
@@ -127,6 +147,7 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
     require(_investor!=address(0));
     if(!KYC[_investor]) {
       KYC[_investor] = true;
+      emit addedKYCInvestor(_investor);
     }
   }
 
@@ -134,6 +155,24 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
     for(uint8 i=0;i<_investors.length;i++) {
       if(_investors[i] != address(0) && !KYC[_investors[i]]) {
         KYC[_investors[i]] = true;
+        emit addedKYCInvestor(_investors[i]);
+      }
+    }
+  }
+
+  function removeAddressFromKYC(address _investor) external whenNotPaused onlyAdmin {
+    require(_investor != address(0));
+    if(KYC[_investor]) {
+      KYC[_investor] = false;
+      emit removedKYCInvestor(_investor);
+    }
+  }
+
+  function removeAddressesFromKYC(address[] _investors) external whenNotPaused onlyAdmin {
+    for(uint8 i=0;i<_investors.length;i++) {
+      if(_investors[i] != address(0) && KYC[_investors[i]]) {
+        KYC[_investors[i]] = false;
+        emit removedKYCInvestor(_investors[i]);
       }
     }
   }
@@ -178,7 +217,9 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
 
   function increaseMaxTokensForSale() public whenNotPaused onlyAdmin {
     uint allowance = token.allowance(msg.sender, this);
+    uint oldTokensAvailable = maxTokensAvailable;
     maxTokensAvailable = maxTokensAvailable.add(allowance);
+    emit TokensAddedToSale(maxTokensAvailable, oldTokensAvailable);
     token.transferFrom(msg.sender, this, allowance);
   }
 
@@ -188,6 +229,7 @@ contract PrivateSale is FinalizableCrowdsale, CustomPausable {
 
   function withdrawToken(address _token) public onlyAdmin {
     ERC20 t = ERC20(_token);
+
     require(t.transfer(msg.sender, t.balanceOf(this)));
   }
 
