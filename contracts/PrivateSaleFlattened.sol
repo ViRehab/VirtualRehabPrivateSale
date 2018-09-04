@@ -960,7 +960,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
   }
 
   ///@notice Initializes the private sale.
-  function initializePrivateSale() {
+  function initializePrivateSale() public onlyAdmin {
     require(!initialized);
 
     increaseTokenSaleAllocation();
