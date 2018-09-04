@@ -20,10 +20,9 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
 contract CustomAdmin is Ownable {
   mapping(address => bool) public admins;
-  uint256 public numberOfAdmins;
 
-  event AdminAdded(address addr);
-  event AdminRemoved(address addr);
+  event AdminAdded(address indexed _address);
+  event AdminRemoved(address indexed _address);
 
   /**
    * @dev Throws if called by any account that's not an administrator.
@@ -32,39 +31,34 @@ contract CustomAdmin is Ownable {
     require(admins[msg.sender] || msg.sender == owner);
     _;
   }
-
-  constructor() public {
-    admins[msg.sender] = true;
-    numberOfAdmins = 1;
-    emit AdminAdded(msg.sender);
-  }
   /**
    * @dev Add an address to the adminstrator list.
-   * @param addr address
+   * @param _address address
    */
-  function addAdmin(address addr) onlyAdmin  public {
-    require(addr != address(0));
-    require(!admins[addr]);
+  function addAdmin(address _address) onlyAdmin  public {
+    require(_address != address(0));
+    require(!admins[_address]);
 
-    admins[addr] = true;
-    numberOfAdmins++;
+    //The owner is already an admin and cannot be added.
+    require(_address != owner);
 
-    emit AdminAdded(addr);
+    admins[_address] = true;
+
+    emit AdminAdded(_address);
   }
 
   /**
    * @dev Remove an address from the administrator list.
-   * @param addr address
+   * @param _address address
    */
-  function removeAdmin(address addr) onlyAdmin  public {
-    require(addr != address(0));
-    require(admins[addr]);
-    //the owner can not be unadminsed
-    require(addr != owner);
+  function removeAdmin(address _address) onlyAdmin  public {
+    require(_address != address(0));
+    require(admins[_address]);
 
-    admins[addr] = false;
-    numberOfAdmins--;
+    //The owner cannot be removed as admin.
+    require(_address != owner);
 
-    emit AdminRemoved(addr);
+    admins[_address] = false;
+    emit AdminRemoved(_address);
   }
 }

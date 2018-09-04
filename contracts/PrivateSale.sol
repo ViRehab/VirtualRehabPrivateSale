@@ -1,163 +1,270 @@
+/*
+Copyright 2018 Virtual Rehab (http://virtualrehab.co)
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+ */
+
 pragma solidity 0.4.24;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/crowdsale/distribution/FinalizableCrowdsale.sol";
 import "./CustomWhitelist.sol";
+import "./TokenPrice.sol";
 import "./EtherPrice.sol";
 import "./BinanceCoinPrice.sol";
 import "./BonusHolder.sol";
 
-contract PrivateSale is EtherPrice, BinanceCoinPrice, BonusHolder, FinalizableCrowdsale, CustomWhitelist {
-  uint public tokenPrice; //price of the 1 token in cents
-  ERC20 public BinanceCoin;
-  uint public totalTokensSold;
-  uint public bonusTokensSold;
-  uint public maxTokensAvailable;
-  uint private amountInUSD; // to track the current contribution
-  uint public minContributionInUSD; //in cents
+
+///@title Virtual Rehab Private Sale.
+///@author Binod Nirvan, Subramanian Venkatesan (http://virtualrehab.co)
+///@notice This contract enables contributors to participate in Virtual Rehab Private Sale.
+///In order to contribute, an investor has to complete the KYC and become whitelisted.
+///Accepted Currencies: Ether, Binance Coin
+contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, FinalizableCrowdsale, CustomWhitelist {
+  ///@notice The ERC20 token contract of Binance Coin.
+  ERC20 public binanceCoin;
+
+  ///@notice The total amount of VRH tokens sold in the private round.
+  uint256 public totalTokensSold;
+
+  ///@notice The total amount of bonus VRH tokens provided to the contributors.
+  uint256 public bonusProvided;
+
+  ///@notice The total amount of VRH tokens allocated for the private sale.
+  uint256 public totalSaleAllocation;
+
+  ///@notice The equivant dollar amount of each contribution request.
+  uint256 private amountInUSDCents;
+
+  ///@notice The minimum contribution in dollar cent value.
+  uint256 public minContributionInUSDCents;
+
+  ///@notice Signifies if the private sale was started.
   bool public initialized;
 
 
-  event TokenPriceChanged(uint _newPrice, uint _oldPrice);
-  event MinimumContributionChanged(uint _newContribution, uint _oldContribution);
+  event MinimumContributionChanged(uint256 _newContribution, uint256 _oldContribution);
   event SaleInitialized();
 
-  event FundsWithdrawn(uint _amount, address _msgSender);
-  event TokensAddedToSale(uint _newAllowance, uint _oldAllowance);
+  event FundsWithdrawn(address indexed _wallet, uint256 _amount);
+  event TokensAllocatedForSale(uint256 _newAllowance, uint256 _oldAllowance);
 
 
-  constructor(uint _startTime, uint _endTime, uint _tokenPrice, uint _etherPriceInCents, uint _binanceCoinPriceInCents, ERC20 _BinanceCoin, ERC20 _token, uint _minContributionInUSD) public
-  TimedCrowdsale(_startTime, _endTime) Crowdsale(1, msg.sender, _token)
+  ///@notice Creates and constructs this private sale contract.
+  ///@param _startTime The date and time of the private sale start.
+  ///@param _endTime The date and time of the private sale end.
+  ///@param _tokenPriceInCents The price per VRH token in cents.
+  ///@param _etherPriceInCents The price of Ether in cents.
+  ///@param _binanceCoinPriceInCents The price of Binance coin in cents.
+  ///@param _binanceCoin Binance coin contract. Must be: 0xB8c77482e45F1F44dE1745F52C74426C631bDD52.
+  ///@param _vrhToken VRH token contract.
+  ///@param _minContributionInUSDCents The minimum contribution in dollar cent value.
+  constructor(uint256 _startTime, uint256 _endTime, uint256 _tokenPriceInCents, uint256 _etherPriceInCents, uint256 _binanceCoinPriceInCents, ERC20 _binanceCoin, ERC20 _vrhToken, uint256 _minContributionInUSDCents) public
+  TimedCrowdsale(_startTime, _endTime) 
+  Crowdsale(1, msg.sender, _vrhToken)
+  TokenPrice(_tokenPriceInCents)
   EtherPrice(_etherPriceInCents)
   BinanceCoinPrice(_binanceCoinPriceInCents)
-  BonusHolder(_token) {
-    require(_tokenPrice > 0);
-    require(_minContributionInUSD > 0);
+  BonusHolder(_vrhToken) {
+    require(_minContributionInUSDCents > 0);
     require(_binanceCoinPriceInCents > 0);
-    tokenPrice = _tokenPrice;
-    binanceCoinPriceInCents = _binanceCoinPriceInCents;
-    BinanceCoin = _BinanceCoin;
-    minContributionInUSD = _minContributionInUSD;
+
+    binanceCoin = _binanceCoin;
+    minContributionInUSDCents = _minContributionInUSDCents;
   }
 
+  ///@notice Initializes the private sale.
   function initializePrivateSale() {
     require(!initialized);
-    increaseMaxTokensForSale();
+
+    increaseTokenSaleAllocation();
+
     initialized = true;
+
     emit SaleInitialized();
   }
 
-  function setTokenPrice(uint _tokenPrice) public onlyAdmin whenNotPaused {
-    require(_tokenPrice > 0);
-    emit TokenPriceChanged(_tokenPrice, tokenPrice);
-    tokenPrice = _tokenPrice;
-  }
+  ///@notice Enables a contributor to contribute using Binance coin.
+  function contributeInBNB() public ifWhitelisted(msg.sender) whenNotPaused onlyWhileOpen {
+    require(initialized);
 
-  function _forwardFunds() internal {
+    ///check the amount of Binance coins allowed by the contributor.
+    uint256 allowance = binanceCoin.allowance(msg.sender, this);
 
-  }
+    ///Calculate equivalent amount in dollar cent value.
+    amountInUSDCents  = convertToCents(allowance, binanceCoinPriceInCents);
 
+    ///Check if the contribution can be accepted.
+    require(amountInUSDCents  >= minContributionInUSDCents);
 
-  function withdrawFunds(uint _amount) public whenNotPaused onlyAdmin {
-    require(_amount <= address(this).balance);
-    msg.sender.transfer(_amount);
-    emit FundsWithdrawn(_amount, msg.sender);
-  }
+    ///Calcuate the amount of tokens per the contribution.
+    uint256 numTokens = amountInUSDCents.mul(10**18).div(tokenPriceInCents);
 
-  // Binance token contribution
-  function contributeInBNB() public isInvestorWhitelisted(msg.sender) whenNotPaused onlyWhileOpen {
-    uint allowance = BinanceCoin.allowance(msg.sender, this);
-    BinanceCoin.transferFrom(msg.sender, this, allowance);
-    amountInUSD = convertToUSD(allowance, binanceCoinPriceInCents);
-    require(amountInUSD >= minContributionInUSD);
-    uint numTokens = amountInUSD.mul(10**18).div(tokenPrice);
-    uint bonus = calculateBonus(numTokens, amountInUSD);
-    require(totalTokensSold.add(numTokens).add(bonus) <= maxTokensAvailable);
+    ///Calcuate the bonus based on the number of tokens and the dollar cent value.
+    uint256 bonus = calculateBonus(numTokens, amountInUSDCents);
+    
+    require(totalTokensSold.add(numTokens).add(bonus) <= totalSaleAllocation);
+
+    ///Receive the Binance coins immeidately.
+    binanceCoin.transferFrom(msg.sender, this, allowance);
+
+    ///Send the VRH tokens to the contributor.
     token.transfer(msg.sender, numTokens);
+
     assignBonus(msg.sender, bonus);
+
     totalTokensSold = totalTokensSold.add(numTokens).add(bonus);
-    bonusTokensSold = bonusTokensSold.add(bonus);
+    bonusProvided = bonusProvided.add(bonus);
   }
 
+  function setMinimumContribution(uint256 _cents) public whenNotPaused onlyAdmin {
+    require(_cents > 0);
 
-  // _minContributionInUSD is minimum contribution allowed in cents
-  function setMinimumContribution(uint _minContributionInUSD) public whenNotPaused onlyAdmin {
-    require(_minContributionInUSD > 0);
-    emit MinimumContributionChanged(minContributionInUSD, _minContributionInUSD);
-    minContributionInUSD = _minContributionInUSD;
+    emit MinimumContributionChanged(minContributionInUSDCents, _cents);
+    minContributionInUSDCents = _cents;
   }
 
+  ///@notice This function is automatically called when a contribution request passes all validations.
+  ///@dev Overriden to keep track of the bonuses.
+  ///@param _beneficiary The contributor who wishes to purchase the VRH tokens.
+  ///@param _tokenAmount The amount of tokens wished to purchase.
   function _processPurchase(address _beneficiary, uint256 _tokenAmount) internal {
-    uint bonus = calculateBonus(_tokenAmount, amountInUSD);
-    require(totalTokensSold.add(_tokenAmount).add(bonus) <= maxTokensAvailable);
-    bonusTokensSold = bonusTokensSold.add(bonus);
+    ///amountInUSDCents is set on _preValidatePurchase
+    uint256 bonus = calculateBonus(_tokenAmount, amountInUSDCents);
+
+    ///Ensure that the sale does not exceed allocation.
+    require(totalTokensSold.add(_tokenAmount).add(bonus) <= totalSaleAllocation);
+
+    ///Keep track of the provided bonus.
+    bonusProvided = bonusProvided.add(bonus);
+
+    ///Assign bonuses so that they can be later withdrawn.
     assignBonus(_beneficiary, bonus);
+
+    ///Update the sum of tokens sold during the private sale.
     totalTokensSold = totalTokensSold.add(_tokenAmount).add(bonus);
+
+    ///Continue processing the purchase.
     super._processPurchase(_beneficiary, _tokenAmount);
   }
 
-  // TODO: change this from hardcoded to an array of bonuses;
-  // TODO: change this from hardcoded to an array of bonuses;
- function calculateBonus(uint _tokenAmount, uint _USD) public view returns (uint256) {
-   if(_USD >= 25000000) {
-     return _tokenAmount.mul(50).div(100);
-   } else if(_USD >= 10000000) {
-     return _tokenAmount.mul(40).div(100);
-   } else if(_USD >=1500000){
-     return _tokenAmount.mul(35).div(100);
-   } else {
-     return 0;
-   }
- }
+  ///@dev Todo: the accuracy of this function needs to be rechecked.
+  ///@param _tokenAmount The total amount in VRH tokens.
+  ///@param _cents The amount in US dollar cents.
+  function calculateBonus(uint256 _tokenAmount, uint256 _cents) public pure returns (uint256) {
+    if(_cents >= 25000000) {
+      return _tokenAmount.mul(50).div(100);
+    } else if(_cents >= 10000000) {
+      return _tokenAmount.mul(40).div(100);
+    } else if(_cents >=1500000){
+      return _tokenAmount.mul(35).div(100);
+    } else {
+      return 0;
+    }
+  }
 
-  function _preValidatePurchase(address _beneficiary, uint256 _weiAmount) internal  whenNotPaused isInvestorWhitelisted(_beneficiary) {
+
+  ///@notice Additional validation rules before token contribution is actually allowed.
+  ///@param _beneficiary The contributor who wishes to purchase the VRH tokens.
+  ///@param _weiAmount The amount of Ethers (in wei) wished to contribute.
+  function _preValidatePurchase(address _beneficiary, uint256 _weiAmount) internal  whenNotPaused ifWhitelisted(_beneficiary) {
     require(initialized);
-    amountInUSD = convertToUSD(_weiAmount, etherPriceInCents);
-    require(amountInUSD >= minContributionInUSD);
+
+    amountInUSDCents  = convertToCents(_weiAmount, etherPriceInCents);
+    require(amountInUSDCents  >= minContributionInUSDCents);
+
+    ///Continue validating the purchaes.
     super._preValidatePurchase(_beneficiary, _weiAmount);
   }
 
-  function convertToUSD(uint _weiAmount, uint costOf1Token) public view returns (uint256) {
-    return _weiAmount.mul(costOf1Token).div(10**18);
+  ///@notice Converts the amount of Ether (wei) or amount of any token having 18 decimal place divisible 
+  ///to cent value based on the cent price supplied.
+  function convertToCents(uint256 _weiAmount, uint256 _priceInCents) public pure returns (uint256) {
+    return _weiAmount.mul(_priceInCents).div(10**18);
   }
 
+  ///@notice Calculates the number of VRH tokens for the supplied wei value.
+  ///@param _weiAmount The total amount of Ether in wei value.
   function _getTokenAmount(uint256 _weiAmount) internal view returns (uint256) {
-    return _weiAmount.mul(etherPriceInCents).div(tokenPrice);
+    return _weiAmount.mul(etherPriceInCents).div(tokenPriceInCents);
   }
 
-  function increaseMaxTokensForSale() public whenNotPaused onlyAdmin {
-    uint allowance = token.allowance(msg.sender, this);
-    uint oldTokensAvailable = maxTokensAvailable;
-    maxTokensAvailable = maxTokensAvailable.add(allowance);
-    emit TokensAddedToSale(maxTokensAvailable, oldTokensAvailable);
-    token.transferFrom(msg.sender, this, allowance);
-  }
-
+  ///@dev Used only for test, drop this function before deployment.
+  ///@param _weiAmount The total amount of Ether in wei value.
   function getTokenAmountForWei(uint256 _weiAmount) public view returns (uint256) {
     return _getTokenAmount(_weiAmount);
   }
 
-  function withdrawToken(address _token) public onlyAdmin {
-    ERC20 t = ERC20(_token);
+  ///@notice Recalculates and/or reassigns the total tokens allocated for the private sale.
+  function increaseTokenSaleAllocation() public whenNotPaused onlyAdmin {
+    ///Check the allowance of this contract to spend.
+    uint256 allowance = token.allowance(msg.sender, this);
 
-    require(t.transfer(msg.sender, t.balanceOf(this)));
+    ///Get the current allocation.
+    uint256 current = totalSaleAllocation;
+
+    ///Update the total token allocation for the private sale.
+    totalSaleAllocation = totalSaleAllocation.add(allowance);
+
+    ///Transfer (receive) the allocated VRH tokens.
+    token.transferFrom(msg.sender, this, allowance);
+
+    emit TokensAllocatedForSale(totalSaleAllocation, current);
   }
 
+
+  ///@notice Enables the admins to withdraw Binance coin 
+  ///or any ERC20 token accidentally sent to this contract.
+  function withdrawToken(address _token) public onlyAdmin {
+    ERC20 erc20 = ERC20(_token);
+    
+    erc20.transfer(msg.sender, erc20.balanceOf(this));
+  }
+
+  
+  ///@dev Must be called after crowdsale ends, to do some extra finalization work.
   function finalizeCrowdsale() public onlyAdmin {
     require(!isFinalized);
     require(hasClosed());
-    uint unsold = token.balanceOf(this).sub(bonusTokensSold);
+
+    uint256 unsold = token.balanceOf(this).sub(bonusProvided);
+
     if(unsold > 0) {
       token.transfer(msg.sender, unsold);
     }
+
     emit Finalized();
     isFinalized = true;
   }
 
+  ///@notice Signifies whether or not the private sale has ended.
+  ///@return Returns true if the private sale has ended.
   function hasClosed() public view returns (bool) {
-    return (totalTokensSold >= maxTokensAvailable) || super.hasClosed();
+    return (totalTokensSold >= totalSaleAllocation) || super.hasClosed();
   }
 
+  ///@dev Reverts the finalization logic.
+  ///@notice Use finalizeCrowdsale instead.
   function finalization() internal {
     revert();
+  }
+
+  ///@notice Stops the crowdsale contract from sending ethers.
+  function _forwardFunds() internal {
+    //Swallow
+  }
+
+  ///@notice Enables the admins to withdraw Ethers present in this contract.
+  function withdrawFunds(uint256 _amount) public whenNotPaused onlyAdmin {
+    require(_amount <= address(this).balance);
+    msg.sender.transfer(_amount);
+
+    emit FundsWithdrawn(msg.sender, _amount);
   }
 }

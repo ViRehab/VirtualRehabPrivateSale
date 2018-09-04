@@ -1,3 +1,3 @@
 @echo off
-SolidityFlattener "contracts/VRHToken.sol" "contracts/VRHTokenFlattened.sol" ".,../node_modules"
+SolidityFlattener "contracts/PrivateSale.sol" "contracts/PrivateSaleFlattened.sol" ".,../node_modules"
 pause
