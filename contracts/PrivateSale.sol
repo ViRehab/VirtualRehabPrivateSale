@@ -39,7 +39,7 @@ contract PrivateSale is EtherPrice, BinanceCoinPrice, BonusHolder, FinalizableCr
     minContributionInUSD = _minContributionInUSD;
   }
 
-  function initializePrivateSale() {
+  function initializePrivateSale() public onlyAdmin {
     require(!initialized);
     increaseMaxTokensForSale();
     initialized = true;
