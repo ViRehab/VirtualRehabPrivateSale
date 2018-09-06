@@ -18,23 +18,22 @@ pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
+///@title This contract enables to create multiple contract administrators
 contract CustomAdmin is Ownable {
+  ///@notice List of administrators.
   mapping(address => bool) public admins;
 
   event AdminAdded(address indexed _address);
   event AdminRemoved(address indexed _address);
 
-  /**
-   * @dev Throws if called by any account that's not an administrator.
-   */
+  ///@notice Validates if the sender is actually an administrator.
   modifier onlyAdmin() {
     require(admins[msg.sender] || msg.sender == owner);
     _;
   }
-  /**
-   * @dev Add an address to the adminstrator list.
-   * @param _address address
-   */
+
+  ///@notice Adds the specified address to the list of administrators.
+  ///@param _address The address to add to the administrator list.
   function addAdmin(address _address) onlyAdmin  public {
     require(_address != address(0));
     require(!admins[_address]);
@@ -47,10 +46,9 @@ contract CustomAdmin is Ownable {
     emit AdminAdded(_address);
   }
 
-  /**
-   * @dev Remove an address from the administrator list.
-   * @param _address address
-   */
+
+  ///@notice Removes the specified address from the list of administrators.
+  ///@param _address The address to remove from the administrator list.
   function removeAdmin(address _address) onlyAdmin  public {
     require(_address != address(0));
     require(admins[_address]);

@@ -577,23 +577,22 @@ limitations under the License.
 
 
 
+///@title This contract enables to create multiple contract administrators
 contract CustomAdmin is Ownable {
+  ///@notice List of administrators.
   mapping(address => bool) public admins;
 
   event AdminAdded(address indexed _address);
   event AdminRemoved(address indexed _address);
 
-  /**
-   * @dev Throws if called by any account that's not an administrator.
-   */
+  ///@notice Validates if the sender is actually an administrator.
   modifier onlyAdmin() {
     require(admins[msg.sender] || msg.sender == owner);
     _;
   }
-  /**
-   * @dev Add an address to the adminstrator list.
-   * @param _address address
-   */
+
+  ///@notice Adds the specified address to the list of administrators.
+  ///@param _address The address to add to the administrator list.
   function addAdmin(address _address) onlyAdmin  public {
     require(_address != address(0));
     require(!admins[_address]);
@@ -606,10 +605,9 @@ contract CustomAdmin is Ownable {
     emit AdminAdded(_address);
   }
 
-  /**
-   * @dev Remove an address from the administrator list.
-   * @param _address address
-   */
+
+  ///@notice Removes the specified address from the list of administrators.
+  ///@param _address The address to remove from the administrator list.
   function removeAdmin(address _address) onlyAdmin  public {
     require(_address != address(0));
     require(admins[_address]);
@@ -624,98 +622,96 @@ contract CustomAdmin is Ownable {
 
 
 
-/**
- * @title Pausable
- * @dev Base contract which allows children to implement an emergency stop mechanism.
- */
+///@title This contract enables you to create pausable mechanism to stop in case of emergency.
 contract CustomPausable is CustomAdmin {
   event Pause();
   event Unpause();
 
   bool public paused = false;
 
-  /**
-   * @dev Modifier to make a function callable only when the contract is not paused.
-   */
+  ///@notice Verifies whether the contract is not paused.
   modifier whenNotPaused() {
     require(!paused);
     _;
   }
 
-  /**
-   * @dev Modifier to make a function callable only when the contract is paused.
-   */
+  ///@notice Verifies whether the contract is paused.
   modifier whenPaused() {
     require(paused);
     _;
   }
 
-  /**
-   * @dev called by the owner to pause, triggers stopped state
-   */
-  function pause() onlyAdmin whenNotPaused public {
+  ///@notice Pauses the contract.
+  function pause() public onlyAdmin whenNotPaused {
     paused = true;
     emit Pause();
   }
 
-  /**
-   * @dev called by the owner to unpause, returns to normal state
-   */
+  ///@notice Unpauses the contract and returns to normal state.
   function unpause() onlyAdmin whenPaused public {
     paused = false;
     emit Unpause();
   }
 }
 
-
+///@title This contract enables to maintain a list of whitelisted wallets.
 contract CustomWhitelist is CustomPausable {
   mapping(address => bool) public whitelist;
 
-  event WhitelistAdded(address indexed _investor);
-  event WhitelistRemoved(address indexed _investor);
+  event WhitelistAdded(address indexed _account);
+  event WhitelistRemoved(address indexed _account);
 
-  modifier ifWhitelisted(address _investor) {
-    require(_investor!=address(0));
-    require(whitelist[_investor]);
+  ///@notice Verifies if the account is whitelisted.
+  modifier ifWhitelisted(address _account) {
+    require(_account!=address(0));
+    require(whitelist[_account]);
 
     _;
   }
-  
-  function addWhitelist(address _investor) external whenNotPaused onlyAdmin {
-    require(_investor!=address(0));
 
-    if(!whitelist[_investor]) {
-      whitelist[_investor] = true;
+  ///@notice Adds an account to the whitelist.
+  ///@param _account The wallet address to add to the whitelist.
+  function addWhitelist(address _account) external whenNotPaused onlyAdmin {
+    require(_account!=address(0));
 
-      emit WhitelistAdded(_investor);
+    if(!whitelist[_account]) {
+      whitelist[_account] = true;
+
+      emit WhitelistAdded(_account);
     }
   }
 
-  function addManyWhitelist(address[] _investors) external whenNotPaused onlyAdmin {
-    for(uint8 i=0;i<_investors.length;i++) {
-      if(_investors[i] != address(0) && !whitelist[_investors[i]]) {
-        whitelist[_investors[i]] = true;
+  ///@notice Adds multiple accounts to the whitelist.
+  ///@param _accounts The wallet addresses to add to the whitelist.
+  function addManyWhitelist(address[] _accounts) external whenNotPaused onlyAdmin {
+    for(uint8 i=0;i<_accounts.length;i++) {
+      if(_accounts[i] != address(0) && !whitelist[_accounts[i]]) {
+        whitelist[_accounts[i]] = true;
 
-        emit WhitelistAdded(_investors[i]);
+        emit WhitelistAdded(_accounts[i]);
       }
     }
   }
 
-  function removeWhitelist(address _investor) external whenNotPaused onlyAdmin {
-    require(_investor != address(0));
-    if(whitelist[_investor]) {
-      whitelist[_investor] = false;
+  ///@notice Removes an account from the whitelist.
+  ///@param _account The wallet address to remove from the whitelist.
+  function removeWhitelist(address _account) external whenNotPaused onlyAdmin {
+    require(_account != address(0));
+    if(whitelist[_account]) {
+      whitelist[_account] = false;
 
-      emit WhitelistRemoved(_investor);
+      emit WhitelistRemoved(_account);
     }
   }
 
-  function removeManyWhitelist(address[] _investors) external whenNotPaused onlyAdmin {
-    for(uint8 i=0;i<_investors.length;i++) {
-      if(_investors[i] != address(0) && whitelist[_investors[i]]) {
-        whitelist[_investors[i]] = false;
+  ///@notice Removes multiple accounts from the whitelist.
+  ///@param _accounts The wallet addresses to remove from the whitelist.
+  function removeManyWhitelist(address[] _accounts) external whenNotPaused onlyAdmin {
+    for(uint8 i=0;i<_accounts.length;i++) {
+      if(_accounts[i] != address(0) && whitelist[_accounts[i]]) {
+        whitelist[_accounts[i]] = false;
         
-        emit WhitelistRemoved(_investors[i]);
+        emit WhitelistRemoved(_accounts[i]);
       }
     }
   }
@@ -858,20 +854,31 @@ limitations under the License.
 
 
 
+///@title This contract enables assigning bonus to crowdsale contributors.
 contract BonusHolder is CustomPausable {
   using SafeMath for uint256;
 
+  ///@notice The list of addresses and their respective bonuses.
   mapping(address => uint256) public bonusHolders;
+
+  ///@notice The timestamp on which bonus will be available.
   uint256 public releaseDate;
+
+  ///@notice The ERC20 token contract of the bonus coin.
   ERC20 public bonusCoin;
 
   event BonusReleaseDateSet(uint256 _releaseDate);
   event BonusWithdrawn(address indexed _address, uint _amount);
 
+  ///@notice Constructs bonus holder.
+  ///@param _bonusCoin The ERC20 token of the coin to hold bonus.
   constructor(ERC20 _bonusCoin){
     bonusCoin = _bonusCoin;
   }
 
+  ///@notice Enables the administrators to set the bonus release date.
+  ///Please note that the release date can only be set once.
+  ///@param _releaseDate The timestamp after which the bonus will be available.
   function setReleaseDate(uint256 _releaseDate) public onlyAdmin whenNotPaused {
     require(releaseDate == 0);
     require(_releaseDate > now);
@@ -881,10 +888,15 @@ contract BonusHolder is CustomPausable {
     emit BonusReleaseDateSet(_releaseDate);
   }
 
+  ///@notice Assigns bonus tokens to the specific contributor.
+  ///@param _investor The wallet address of the investor/contributor.
+  ///@param _tokenAmount The amount of bonus in token value.
   function assignBonus(address _investor, uint256 _tokenAmount) internal {
     bonusHolders[_investor] = bonusHolders[_investor].add(_tokenAmount);
   }
 
+  ///@notice Enables contributors to withdraw their bonus.
+  ///The bonus can only be withdrawn after the release date.
   function withdrawBonus() public whenNotPaused {
     require(releaseDate != 0);
     require(now > releaseDate);
@@ -900,12 +912,22 @@ contract BonusHolder is CustomPausable {
 }
 
 
-
 ///@title Virtual Rehab Private Sale.
 ///@author Binod Nirvan, Subramanian Venkatesan (http://virtualrehab.co)
 ///@notice This contract enables contributors to participate in Virtual Rehab Private Sale.
-///In order to contribute, an investor has to complete the KYC and become whitelisted.
-///Accepted Currencies: Ether, Binance Coin
+///
+///The Virtual Rehab Private Sale provides early investors with an opportunity 
+///to take part into the Virtual Rehab token sale ahead of the pre-sale and main sale launch. 
+///All early investors are expected to successfully complete KYC and whitelisting 
+///to contribute to the Virtual Rehab token sale. 
+///
+///US investors must be accredited investors and must provide all requested documentation 
+///to validate their accreditation. We, unfortunately, do not accept contributions 
+///from non-accredited investors within the US along with any contribution 
+///from China, Republic of Korea, and New Zealand. Any questions or additional information needed 
+///can be sought by sending an e-mail to investors＠virtualrehab.co.
+///
+//////Accepted Currencies: Ether, Binance Coin.
 contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, FinalizableCrowdsale, CustomWhitelist {
   ///@notice The ERC20 token contract of Binance Coin.
   ERC20 public binanceCoin;

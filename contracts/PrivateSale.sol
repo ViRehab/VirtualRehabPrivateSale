@@ -24,8 +24,19 @@ import "./BonusHolder.sol";
 ///@title Virtual Rehab Private Sale.
 ///@author Binod Nirvan, Subramanian Venkatesan (http://virtualrehab.co)
 ///@notice This contract enables contributors to participate in Virtual Rehab Private Sale.
-///In order to contribute, an investor has to complete the KYC and become whitelisted.
-///Accepted Currencies: Ether, Binance Coin
+///
+///The Virtual Rehab Private Sale provides early investors with an opportunity 
+///to take part into the Virtual Rehab token sale ahead of the pre-sale and main sale launch. 
+///All early investors are expected to successfully complete KYC and whitelisting 
+///to contribute to the Virtual Rehab token sale. 
+///
+///US investors must be accredited investors and must provide all requested documentation 
+///to validate their accreditation. We, unfortunately, do not accept contributions 
+///from non-accredited investors within the US along with any contribution 
+///from China, Republic of Korea, and New Zealand. Any questions or additional information needed 
+///can be sought by sending an e-mail to investors＠virtualrehab.co.
+///
+//////Accepted Currencies: Ether, Binance Coin.
 contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, FinalizableCrowdsale, CustomWhitelist {
   ///@notice The ERC20 token contract of Binance Coin.
   ERC20 public binanceCoin;

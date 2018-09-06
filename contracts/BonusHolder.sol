@@ -19,20 +19,31 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "./CustomPausable.sol";
 
+///@title This contract enables assigning bonus to crowdsale contributors.
 contract BonusHolder is CustomPausable {
   using SafeMath for uint256;
 
+  ///@notice The list of addresses and their respective bonuses.
   mapping(address => uint256) public bonusHolders;
+
+  ///@notice The timestamp on which bonus will be available.
   uint256 public releaseDate;
+
+  ///@notice The ERC20 token contract of the bonus coin.
   ERC20 public bonusCoin;
 
   event BonusReleaseDateSet(uint256 _releaseDate);
   event BonusWithdrawn(address indexed _address, uint _amount);
 
+  ///@notice Constructs bonus holder.
+  ///@param _bonusCoin The ERC20 token of the coin to hold bonus.
   constructor(ERC20 _bonusCoin){
     bonusCoin = _bonusCoin;
   }
 
+  ///@notice Enables the administrators to set the bonus release date.
+  ///Please note that the release date can only be set once.
+  ///@param _releaseDate The timestamp after which the bonus will be available.
   function setReleaseDate(uint256 _releaseDate) public onlyAdmin whenNotPaused {
     require(releaseDate == 0);
     require(_releaseDate > now);
@@ -42,10 +53,15 @@ contract BonusHolder is CustomPausable {
     emit BonusReleaseDateSet(_releaseDate);
   }
 
+  ///@notice Assigns bonus tokens to the specific contributor.
+  ///@param _investor The wallet address of the investor/contributor.
+  ///@param _tokenAmount The amount of bonus in token value.
   function assignBonus(address _investor, uint256 _tokenAmount) internal {
     bonusHolders[_investor] = bonusHolders[_investor].add(_tokenAmount);
   }
 
+  ///@notice Enables contributors to withdraw their bonus.
+  ///The bonus can only be withdrawn after the release date.
   function withdrawBonus() public whenNotPaused {
     require(releaseDate != 0);
     require(now > releaseDate);

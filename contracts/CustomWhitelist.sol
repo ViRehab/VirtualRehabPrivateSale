@@ -17,54 +17,64 @@ limitations under the License.
 pragma solidity 0.4.24;
 import "./CustomPausable.sol";
 
+///@title This contract enables to maintain a list of whitelisted wallets.
 contract CustomWhitelist is CustomPausable {
   mapping(address => bool) public whitelist;
 
-  event WhitelistAdded(address indexed _investor);
-  event WhitelistRemoved(address indexed _investor);
+  event WhitelistAdded(address indexed _account);
+  event WhitelistRemoved(address indexed _account);
 
-  modifier ifWhitelisted(address _investor) {
-    require(_investor!=address(0));
-    require(whitelist[_investor]);
+  ///@notice Verifies if the account is whitelisted.
+  modifier ifWhitelisted(address _account) {
+    require(_account!=address(0));
+    require(whitelist[_account]);
 
     _;
   }
-  
-  function addWhitelist(address _investor) external whenNotPaused onlyAdmin {
-    require(_investor!=address(0));
 
-    if(!whitelist[_investor]) {
-      whitelist[_investor] = true;
+  ///@notice Adds an account to the whitelist.
+  ///@param _account The wallet address to add to the whitelist.
+  function addWhitelist(address _account) external whenNotPaused onlyAdmin {
+    require(_account!=address(0));
 
-      emit WhitelistAdded(_investor);
+    if(!whitelist[_account]) {
+      whitelist[_account] = true;
+
+      emit WhitelistAdded(_account);
     }
   }
 
-  function addManyWhitelist(address[] _investors) external whenNotPaused onlyAdmin {
-    for(uint8 i=0;i<_investors.length;i++) {
-      if(_investors[i] != address(0) && !whitelist[_investors[i]]) {
-        whitelist[_investors[i]] = true;
+  ///@notice Adds multiple accounts to the whitelist.
+  ///@param _accounts The wallet addresses to add to the whitelist.
+  function addManyWhitelist(address[] _accounts) external whenNotPaused onlyAdmin {
+    for(uint8 i=0;i<_accounts.length;i++) {
+      if(_accounts[i] != address(0) && !whitelist[_accounts[i]]) {
+        whitelist[_accounts[i]] = true;
 
-        emit WhitelistAdded(_investors[i]);
+        emit WhitelistAdded(_accounts[i]);
       }
     }
   }
 
-  function removeWhitelist(address _investor) external whenNotPaused onlyAdmin {
-    require(_investor != address(0));
-    if(whitelist[_investor]) {
-      whitelist[_investor] = false;
+  ///@notice Removes an account from the whitelist.
+  ///@param _account The wallet address to remove from the whitelist.
+  function removeWhitelist(address _account) external whenNotPaused onlyAdmin {
+    require(_account != address(0));
+    if(whitelist[_account]) {
+      whitelist[_account] = false;
 
-      emit WhitelistRemoved(_investor);
+      emit WhitelistRemoved(_account);
     }
   }
 
-  function removeManyWhitelist(address[] _investors) external whenNotPaused onlyAdmin {
-    for(uint8 i=0;i<_investors.length;i++) {
-      if(_investors[i] != address(0) && whitelist[_investors[i]]) {
-        whitelist[_investors[i]] = false;
+  ///@notice Removes multiple accounts from the whitelist.
+  ///@param _accounts The wallet addresses to remove from the whitelist.
+  function removeManyWhitelist(address[] _accounts) external whenNotPaused onlyAdmin {
+    for(uint8 i=0;i<_accounts.length;i++) {
+      if(_accounts[i] != address(0) && whitelist[_accounts[i]]) {
+        whitelist[_accounts[i]] = false;
         
-        emit WhitelistRemoved(_investors[i]);
+        emit WhitelistRemoved(_accounts[i]);
       }
     }
   }

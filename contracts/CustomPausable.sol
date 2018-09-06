@@ -21,43 +21,32 @@ limitations under the License.
 import "./CustomAdmin.sol";
 
 
-/**
- * @title Pausable
- * @dev Base contract which allows children to implement an emergency stop mechanism.
- */
+///@title This contract enables you to create pausable mechanism to stop in case of emergency.
 contract CustomPausable is CustomAdmin {
   event Pause();
   event Unpause();
 
   bool public paused = false;
 
-  /**
-   * @dev Modifier to make a function callable only when the contract is not paused.
-   */
+  ///@notice Verifies whether the contract is not paused.
   modifier whenNotPaused() {
     require(!paused);
     _;
   }
 
-  /**
-   * @dev Modifier to make a function callable only when the contract is paused.
-   */
+  ///@notice Verifies whether the contract is paused.
   modifier whenPaused() {
     require(paused);
     _;
   }
 
-  /**
-   * @dev called by the owner to pause, triggers stopped state
-   */
-  function pause() onlyAdmin whenNotPaused public {
+  ///@notice Pauses the contract.
+  function pause() public onlyAdmin whenNotPaused {
     paused = true;
     emit Pause();
   }
 
-  /**
-   * @dev called by the owner to unpause, returns to normal state
-   */
+  ///@notice Unpauses the contract and returns to normal state.
   function unpause() onlyAdmin whenPaused public {
     paused = false;
     emit Unpause();
