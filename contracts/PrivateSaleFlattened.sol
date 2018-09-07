@@ -577,7 +577,7 @@ limitations under the License.
 
 
 
-///@title This contract enables to create multiple contract administrators
+///@title This contract enables to create multiple contract administrators.
 contract CustomAdmin is Ownable {
   ///@notice List of administrators.
   mapping(address => bool) public admins;
@@ -593,7 +593,7 @@ contract CustomAdmin is Ownable {
 
   ///@notice Adds the specified address to the list of administrators.
   ///@param _address The address to add to the administrator list.
-  function addAdmin(address _address) onlyAdmin  public {
+  function addAdmin(address _address) external onlyAdmin {
     require(_address != address(0));
     require(!admins[_address]);
 
@@ -605,10 +605,26 @@ contract CustomAdmin is Ownable {
     emit AdminAdded(_address);
   }
 
+  ///@notice Adds multiple addresses to the administrator list.
+  ///@param _accounts The wallet addresses to add to the administrator list.
+  function addManyAdmins(address[] _accounts) external onlyAdmin {
+    for(uint8 i=0; i<_accounts.length; i++) {
+      address account = _accounts[i];
 
+      ///Zero address cannot be an admin.
+      ///The owner is already an admin and cannot be assigned.
+      ///The address cannot be an existing admin.
+      if(account != address(0) && !admins[account] && account != owner){
+        admins[account] = true;
+
+        emit AdminAdded(_accounts[i]);
+      }
+    }
+  }
+  
   ///@notice Removes the specified address from the list of administrators.
   ///@param _address The address to remove from the administrator list.
-  function removeAdmin(address _address) onlyAdmin  public {
+  function removeAdmin(address _address) external onlyAdmin {
     require(_address != address(0));
     require(admins[_address]);
 
@@ -617,6 +633,24 @@ contract CustomAdmin is Ownable {
 
     admins[_address] = false;
     emit AdminRemoved(_address);
+  }
+
+
+  ///@notice Removes multiple addresses to the administrator list.
+  ///@param _accounts The wallet addresses to add to the administrator list.
+  function removeManyAdmins(address[] _accounts) external onlyAdmin {
+    for(uint8 i=0; i<_accounts.length; i++) {
+      address account = _accounts[i];
+
+      ///Zero address can neither be added or removed from this list.
+      ///The owner is the super admin and cannot be removed.
+      ///The address must be an existing admin in order for it to be removed.
+      if(account != address(0) && admins[account] && account != owner){
+        admins[account] = false;
+
+        emit AdminRemoved(_accounts[i]);
+      }
+    }
   }
 }
 
@@ -642,13 +676,13 @@ contract CustomPausable is CustomAdmin {
   }
 
   ///@notice Pauses the contract.
-  function pause() public onlyAdmin whenNotPaused {
+  function pause() external onlyAdmin whenNotPaused {
     paused = true;
     emit Pause();
   }
 
   ///@notice Unpauses the contract and returns to normal state.
-  function unpause() onlyAdmin whenPaused public {
+  function unpause() external onlyAdmin whenPaused {
     paused = false;
     emit Unpause();
   }
@@ -663,7 +697,7 @@ contract CustomWhitelist is CustomPausable {
 
   ///@notice Verifies if the account is whitelisted.
   modifier ifWhitelisted(address _account) {
-    require(_account!=address(0));
+    require(_account != address(0));
     require(whitelist[_account]);
 
     _;
@@ -735,9 +769,10 @@ limitations under the License.
 
 
 
+///@title This contract keeps track of the VRH token price.
 contract TokenPrice is CustomPausable {
   ///@notice The price per token in cents.
-  uint256 public tokenPriceInCents ;
+  uint256 public tokenPriceInCents;
 
   event TokenPriceChanged(uint256 _newPrice, uint256 _oldPrice);
 
@@ -747,7 +782,7 @@ contract TokenPrice is CustomPausable {
   }
 
 
-  function setTokenPrice(uint256 _cents) public onlyAdmin whenNotPaused {
+  function setTokenPrice(uint256 _cents) external onlyAdmin whenNotPaused {
     require(_cents > 0);
 
     emit TokenPriceChanged(_cents, tokenPriceInCents );
@@ -774,6 +809,7 @@ limitations under the License.
 
 
 
+///@title This contract keeps track of Ether price.
 contract EtherPrice is CustomPausable {
   uint256 public etherPriceInCents; //price of 1 ETH in cents
 
@@ -787,7 +823,7 @@ contract EtherPrice is CustomPausable {
     emit EtherPriceChanged(0, etherPriceInCents);
   }
 
-  function setEtherPrice(uint256 _cents) public whenNotPaused onlyAdmin {
+  function setEtherPrice(uint256 _cents) external whenNotPaused onlyAdmin {
     require(_cents > 0);
     
     emit EtherPriceChanged(_cents, etherPriceInCents);
@@ -814,6 +850,7 @@ limitations under the License.
  
 
 
+///@title This contract keeps track of Binance Coin price.
 contract BinanceCoinPrice is CustomPausable {
   uint256 public binanceCoinPriceInCents;
 
@@ -826,7 +863,7 @@ contract BinanceCoinPrice is CustomPausable {
     emit BinanceCoinPriceChanged(0, _cents);
   }
 
-  function setBinanceCoinPrice(uint256 _cents) public whenNotPaused onlyAdmin {
+  function setBinanceCoinPrice(uint256 _cents) external whenNotPaused onlyAdmin {
     require(_cents > 0);
 
     emit BinanceCoinPriceChanged(_cents, binanceCoinPriceInCents);
@@ -867,7 +904,11 @@ contract BonusHolder is CustomPausable {
   ///@notice The ERC20 token contract of the bonus coin.
   ERC20 public bonusCoin;
 
+  ///@notice The total amount of bonus coins provided to the contributors.
+  uint256 public bonusProvided;
+
   event BonusReleaseDateSet(uint256 _releaseDate);
+  event BonusAssigned(address indexed _address, uint _amount);
   event BonusWithdrawn(address indexed _address, uint _amount);
 
   ///@notice Constructs bonus holder.
@@ -879,7 +920,7 @@ contract BonusHolder is CustomPausable {
   ///@notice Enables the administrators to set the bonus release date.
   ///Please note that the release date can only be set once.
   ///@param _releaseDate The timestamp after which the bonus will be available.
-  function setReleaseDate(uint256 _releaseDate) public onlyAdmin whenNotPaused {
+  function setReleaseDate(uint256 _releaseDate) external onlyAdmin whenNotPaused {
     require(releaseDate == 0);
     require(_releaseDate > now);
 
@@ -890,14 +931,21 @@ contract BonusHolder is CustomPausable {
 
   ///@notice Assigns bonus tokens to the specific contributor.
   ///@param _investor The wallet address of the investor/contributor.
-  ///@param _tokenAmount The amount of bonus in token value.
-  function assignBonus(address _investor, uint256 _tokenAmount) internal {
-    bonusHolders[_investor] = bonusHolders[_investor].add(_tokenAmount);
+  ///@param _bonus The amount of bonus in token value.
+  function assignBonus(address _investor, uint256 _bonus) internal {
+    if(_bonus == 0){
+      return;
+    }
+
+    bonusProvided = bonusProvided.add(_bonus);
+    bonusHolders[_investor] = bonusHolders[_investor].add(_bonus);
+
+    emit BonusAssigned(_investor, _bonus);
   }
 
   ///@notice Enables contributors to withdraw their bonus.
   ///The bonus can only be withdrawn after the release date.
-  function withdrawBonus() public whenNotPaused {
+  function withdrawBonus() external whenNotPaused {
     require(releaseDate != 0);
     require(now > releaseDate);
     uint256 amount = bonusHolders[msg.sender];
@@ -929,20 +977,14 @@ contract BonusHolder is CustomPausable {
 ///
 //////Accepted Currencies: Ether, Binance Coin.
 contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, FinalizableCrowdsale, CustomWhitelist {
-  ///@notice The ERC20 token contract of Binance Coin.
+  ///@notice The ERC20 token contract of Binance Coin. Must be: 0xB8c77482e45F1F44dE1745F52C74426C631bDD52
   ERC20 public binanceCoin;
 
   ///@notice The total amount of VRH tokens sold in the private round.
   uint256 public totalTokensSold;
 
-  ///@notice The total amount of bonus VRH tokens provided to the contributors.
-  uint256 public bonusProvided;
-
   ///@notice The total amount of VRH tokens allocated for the private sale.
   uint256 public totalSaleAllocation;
-
-  ///@notice The equivant dollar amount of each contribution request.
-  uint256 private amountInUSDCents;
 
   ///@notice The minimum contribution in dollar cent value.
   uint256 public minContributionInUSDCents;
@@ -950,13 +992,12 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
   ///@notice Signifies if the private sale was started.
   bool public initialized;
 
-
   event MinimumContributionChanged(uint256 _newContribution, uint256 _oldContribution);
   event SaleInitialized();
 
   event FundsWithdrawn(address indexed _wallet, uint256 _amount);
+  event ERC20Withdrawn(address indexed _contract, uint256 _amount);
   event TokensAllocatedForSale(uint256 _newAllowance, uint256 _oldAllowance);
-
 
   ///@notice Creates and constructs this private sale contract.
   ///@param _startTime The date and time of the private sale start.
@@ -975,14 +1016,14 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
   BinanceCoinPrice(_binanceCoinPriceInCents)
   BonusHolder(_vrhToken) {
     require(_minContributionInUSDCents > 0);
-    require(_binanceCoinPriceInCents > 0);
+    //require(address(_binanceCoin) == 0xB8c77482e45F1F44dE1745F52C74426C631bDD52);
 
     binanceCoin = _binanceCoin;
     minContributionInUSDCents = _minContributionInUSDCents;
   }
 
   ///@notice Initializes the private sale.
-  function initializePrivateSale() public onlyAdmin {
+  function initializePrivateSale() external onlyAdmin {
     require(!initialized);
 
     increaseTokenSaleAllocation();
@@ -993,23 +1034,23 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
   }
 
   ///@notice Enables a contributor to contribute using Binance coin.
-  function contributeInBNB() public ifWhitelisted(msg.sender) whenNotPaused onlyWhileOpen {
+  function contributeInBNB() external ifWhitelisted(msg.sender) whenNotPaused onlyWhileOpen {
     require(initialized);
 
-    ///check the amount of Binance coins allowed by the contributor.
+    ///Check the amount of Binance coins allowed to (be transferred by) this contract by the contributor.
     uint256 allowance = binanceCoin.allowance(msg.sender, this);
 
     ///Calculate equivalent amount in dollar cent value.
-    amountInUSDCents  = convertToCents(allowance, binanceCoinPriceInCents);
+    uint256 contributionCents  = convertToCents(allowance, binanceCoinPriceInCents);
 
     ///Check if the contribution can be accepted.
-    require(amountInUSDCents  >= minContributionInUSDCents);
+    require(contributionCents  >= minContributionInUSDCents);
 
     ///Calcuate the amount of tokens per the contribution.
-    uint256 numTokens = amountInUSDCents.mul(10**18).div(tokenPriceInCents);
+    uint256 numTokens = contributionCents.mul(10**18).div(tokenPriceInCents);
 
     ///Calcuate the bonus based on the number of tokens and the dollar cent value.
-    uint256 bonus = calculateBonus(numTokens, amountInUSDCents);
+    uint256 bonus = calculateBonus(numTokens, contributionCents);
     
     require(totalTokensSold.add(numTokens).add(bonus) <= totalSaleAllocation);
 
@@ -1019,17 +1060,33 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
     ///Send the VRH tokens to the contributor.
     token.transfer(msg.sender, numTokens);
 
+    ///Assign the bonus to be vested and later withdrawn.
     assignBonus(msg.sender, bonus);
 
     totalTokensSold = totalTokensSold.add(numTokens).add(bonus);
-    bonusProvided = bonusProvided.add(bonus);
   }
 
-  function setMinimumContribution(uint256 _cents) public whenNotPaused onlyAdmin {
+  function setMinimumContribution(uint256 _cents) external whenNotPaused onlyAdmin {
     require(_cents > 0);
 
     emit MinimumContributionChanged(minContributionInUSDCents, _cents);
     minContributionInUSDCents = _cents;
+  }
+
+  ///@notice The equivant dollar amount of each contribution request.
+  uint256 private amountInUSDCents;
+
+  ///@notice Additional validation rules before token contribution is actually allowed.
+  ///@param _beneficiary The contributor who wishes to purchase the VRH tokens.
+  ///@param _weiAmount The amount of Ethers (in wei) wished to contribute.
+  function _preValidatePurchase(address _beneficiary, uint256 _weiAmount) internal  whenNotPaused ifWhitelisted(_beneficiary) {
+    require(initialized);
+
+    amountInUSDCents  = convertToCents(_weiAmount, etherPriceInCents);
+    require(amountInUSDCents  >= minContributionInUSDCents);
+
+    ///Continue validating the purchaes.
+    super._preValidatePurchase(_beneficiary, _weiAmount);
   }
 
   ///@notice This function is automatically called when a contribution request passes all validations.
@@ -1042,9 +1099,6 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
 
     ///Ensure that the sale does not exceed allocation.
     require(totalTokensSold.add(_tokenAmount).add(bonus) <= totalSaleAllocation);
-
-    ///Keep track of the provided bonus.
-    bonusProvided = bonusProvided.add(bonus);
 
     ///Assign bonuses so that they can be later withdrawn.
     assignBonus(_beneficiary, bonus);
@@ -1071,20 +1125,6 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
     }
   }
 
-
-  ///@notice Additional validation rules before token contribution is actually allowed.
-  ///@param _beneficiary The contributor who wishes to purchase the VRH tokens.
-  ///@param _weiAmount The amount of Ethers (in wei) wished to contribute.
-  function _preValidatePurchase(address _beneficiary, uint256 _weiAmount) internal  whenNotPaused ifWhitelisted(_beneficiary) {
-    require(initialized);
-
-    amountInUSDCents  = convertToCents(_weiAmount, etherPriceInCents);
-    require(amountInUSDCents  >= minContributionInUSDCents);
-
-    ///Continue validating the purchaes.
-    super._preValidatePurchase(_beneficiary, _weiAmount);
-  }
-
   ///@notice Converts the amount of Ether (wei) or amount of any token having 18 decimal place divisible 
   ///to cent value based on the cent price supplied.
   function convertToCents(uint256 _weiAmount, uint256 _priceInCents) public pure returns (uint256) {
@@ -1099,7 +1139,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
 
   ///@dev Used only for test, drop this function before deployment.
   ///@param _weiAmount The total amount of Ether in wei value.
-  function getTokenAmountForWei(uint256 _weiAmount) public view returns (uint256) {
+  function getTokenAmountForWei(uint256 _weiAmount) external view returns (uint256) {
     return _getTokenAmount(_weiAmount);
   }
 
@@ -1121,12 +1161,19 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
   }
 
 
-  ///@notice Enables the admins to withdraw Binance coin 
+  ///@notice Enables the admins to withdraw Binance coin
   ///or any ERC20 token accidentally sent to this contract.
-  function withdrawToken(address _token) public onlyAdmin {
+  function withdrawToken(address _token) external onlyAdmin {
+    ///This stops admins from stealing the allocated bonus of the investors.
+    ///The bonus VRH tokens should remain in this contract.
+    require(_token != address(this));
+
     ERC20 erc20 = ERC20(_token);
-    
-    erc20.transfer(msg.sender, erc20.balanceOf(this));
+    uint256 balance = erc20.balanceOf(this);
+
+
+    erc20.transfer(msg.sender, balance);
+    emit ERC20Withdrawn(_token, balance);
   }
 
   
@@ -1163,7 +1210,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
   }
 
   ///@notice Enables the admins to withdraw Ethers present in this contract.
-  function withdrawFunds(uint256 _amount) public whenNotPaused onlyAdmin {
+  function withdrawFunds(uint256 _amount) external whenNotPaused onlyAdmin {
     require(_amount <= address(this).balance);
     msg.sender.transfer(_amount);
 

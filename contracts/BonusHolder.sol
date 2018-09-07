@@ -32,7 +32,11 @@ contract BonusHolder is CustomPausable {
   ///@notice The ERC20 token contract of the bonus coin.
   ERC20 public bonusCoin;
 
+  ///@notice The total amount of bonus coins provided to the contributors.
+  uint256 public bonusProvided;
+
   event BonusReleaseDateSet(uint256 _releaseDate);
+  event BonusAssigned(address indexed _address, uint _amount);
   event BonusWithdrawn(address indexed _address, uint _amount);
 
   ///@notice Constructs bonus holder.
@@ -44,7 +48,7 @@ contract BonusHolder is CustomPausable {
   ///@notice Enables the administrators to set the bonus release date.
   ///Please note that the release date can only be set once.
   ///@param _releaseDate The timestamp after which the bonus will be available.
-  function setReleaseDate(uint256 _releaseDate) public onlyAdmin whenNotPaused {
+  function setReleaseDate(uint256 _releaseDate) external onlyAdmin whenNotPaused {
     require(releaseDate == 0);
     require(_releaseDate > now);
 
@@ -55,14 +59,21 @@ contract BonusHolder is CustomPausable {
 
   ///@notice Assigns bonus tokens to the specific contributor.
   ///@param _investor The wallet address of the investor/contributor.
-  ///@param _tokenAmount The amount of bonus in token value.
-  function assignBonus(address _investor, uint256 _tokenAmount) internal {
-    bonusHolders[_investor] = bonusHolders[_investor].add(_tokenAmount);
+  ///@param _bonus The amount of bonus in token value.
+  function assignBonus(address _investor, uint256 _bonus) internal {
+    if(_bonus == 0){
+      return;
+    }
+
+    bonusProvided = bonusProvided.add(_bonus);
+    bonusHolders[_investor] = bonusHolders[_investor].add(_bonus);
+
+    emit BonusAssigned(_investor, _bonus);
   }
 
   ///@notice Enables contributors to withdraw their bonus.
   ///The bonus can only be withdrawn after the release date.
-  function withdrawBonus() public whenNotPaused {
+  function withdrawBonus() external whenNotPaused {
     require(releaseDate != 0);
     require(now > releaseDate);
     uint256 amount = bonusHolders[msg.sender];

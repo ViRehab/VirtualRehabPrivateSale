@@ -41,13 +41,13 @@ contract CustomPausable is CustomAdmin {
   }
 
   ///@notice Pauses the contract.
-  function pause() public onlyAdmin whenNotPaused {
+  function pause() external onlyAdmin whenNotPaused {
     paused = true;
     emit Pause();
   }
 
   ///@notice Unpauses the contract and returns to normal state.
-  function unpause() onlyAdmin whenPaused public {
+  function unpause() external onlyAdmin whenPaused {
     paused = false;
     emit Unpause();
   }

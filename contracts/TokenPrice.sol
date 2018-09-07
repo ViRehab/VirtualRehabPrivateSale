@@ -17,9 +17,10 @@ limitations under the License.
 pragma solidity 0.4.24;
 import "./CustomPausable.sol";
 
+///@title This contract keeps track of the VRH token price.
 contract TokenPrice is CustomPausable {
   ///@notice The price per token in cents.
-  uint256 public tokenPriceInCents ;
+  uint256 public tokenPriceInCents;
 
   event TokenPriceChanged(uint256 _newPrice, uint256 _oldPrice);
 
@@ -29,7 +30,7 @@ contract TokenPrice is CustomPausable {
   }
 
 
-  function setTokenPrice(uint256 _cents) public onlyAdmin whenNotPaused {
+  function setTokenPrice(uint256 _cents) external onlyAdmin whenNotPaused {
     require(_cents > 0);
 
     emit TokenPriceChanged(_cents, tokenPriceInCents );

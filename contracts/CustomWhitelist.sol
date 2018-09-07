@@ -26,7 +26,7 @@ contract CustomWhitelist is CustomPausable {
 
   ///@notice Verifies if the account is whitelisted.
   modifier ifWhitelisted(address _account) {
-    require(_account!=address(0));
+    require(_account != address(0));
     require(whitelist[_account]);
 
     _;

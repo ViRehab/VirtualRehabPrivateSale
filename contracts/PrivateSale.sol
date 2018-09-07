@@ -38,20 +38,14 @@ import "./BonusHolder.sol";
 ///
 //////Accepted Currencies: Ether, Binance Coin.
 contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, FinalizableCrowdsale, CustomWhitelist {
-  ///@notice The ERC20 token contract of Binance Coin.
+  ///@notice The ERC20 token contract of Binance Coin. Must be: 0xB8c77482e45F1F44dE1745F52C74426C631bDD52
   ERC20 public binanceCoin;
 
   ///@notice The total amount of VRH tokens sold in the private round.
   uint256 public totalTokensSold;
 
-  ///@notice The total amount of bonus VRH tokens provided to the contributors.
-  uint256 public bonusProvided;
-
   ///@notice The total amount of VRH tokens allocated for the private sale.
   uint256 public totalSaleAllocation;
-
-  ///@notice The equivant dollar amount of each contribution request.
-  uint256 private amountInUSDCents;
 
   ///@notice The minimum contribution in dollar cent value.
   uint256 public minContributionInUSDCents;
@@ -59,13 +53,12 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
   ///@notice Signifies if the private sale was started.
   bool public initialized;
 
-
   event MinimumContributionChanged(uint256 _newContribution, uint256 _oldContribution);
   event SaleInitialized();
 
   event FundsWithdrawn(address indexed _wallet, uint256 _amount);
+  event ERC20Withdrawn(address indexed _contract, uint256 _amount);
   event TokensAllocatedForSale(uint256 _newAllowance, uint256 _oldAllowance);
-
 
   ///@notice Creates and constructs this private sale contract.
   ///@param _startTime The date and time of the private sale start.
@@ -84,14 +77,14 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
   BinanceCoinPrice(_binanceCoinPriceInCents)
   BonusHolder(_vrhToken) {
     require(_minContributionInUSDCents > 0);
-    require(_binanceCoinPriceInCents > 0);
+    //require(address(_binanceCoin) == 0xB8c77482e45F1F44dE1745F52C74426C631bDD52);
 
     binanceCoin = _binanceCoin;
     minContributionInUSDCents = _minContributionInUSDCents;
   }
 
   ///@notice Initializes the private sale.
-  function initializePrivateSale() public onlyAdmin {
+  function initializePrivateSale() external onlyAdmin {
     require(!initialized);
 
     increaseTokenSaleAllocation();
@@ -102,23 +95,23 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
   }
 
   ///@notice Enables a contributor to contribute using Binance coin.
-  function contributeInBNB() public ifWhitelisted(msg.sender) whenNotPaused onlyWhileOpen {
+  function contributeInBNB() external ifWhitelisted(msg.sender) whenNotPaused onlyWhileOpen {
     require(initialized);
 
-    ///check the amount of Binance coins allowed by the contributor.
+    ///Check the amount of Binance coins allowed to (be transferred by) this contract by the contributor.
     uint256 allowance = binanceCoin.allowance(msg.sender, this);
 
     ///Calculate equivalent amount in dollar cent value.
-    amountInUSDCents  = convertToCents(allowance, binanceCoinPriceInCents);
+    uint256 contributionCents  = convertToCents(allowance, binanceCoinPriceInCents);
 
     ///Check if the contribution can be accepted.
-    require(amountInUSDCents  >= minContributionInUSDCents);
+    require(contributionCents  >= minContributionInUSDCents);
 
     ///Calcuate the amount of tokens per the contribution.
-    uint256 numTokens = amountInUSDCents.mul(10**18).div(tokenPriceInCents);
+    uint256 numTokens = contributionCents.mul(10**18).div(tokenPriceInCents);
 
     ///Calcuate the bonus based on the number of tokens and the dollar cent value.
-    uint256 bonus = calculateBonus(numTokens, amountInUSDCents);
+    uint256 bonus = calculateBonus(numTokens, contributionCents);
     
     require(totalTokensSold.add(numTokens).add(bonus) <= totalSaleAllocation);
 
@@ -128,17 +121,33 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
     ///Send the VRH tokens to the contributor.
     token.transfer(msg.sender, numTokens);
 
+    ///Assign the bonus to be vested and later withdrawn.
     assignBonus(msg.sender, bonus);
 
     totalTokensSold = totalTokensSold.add(numTokens).add(bonus);
-    bonusProvided = bonusProvided.add(bonus);
   }
 
-  function setMinimumContribution(uint256 _cents) public whenNotPaused onlyAdmin {
+  function setMinimumContribution(uint256 _cents) external whenNotPaused onlyAdmin {
     require(_cents > 0);
 
     emit MinimumContributionChanged(minContributionInUSDCents, _cents);
     minContributionInUSDCents = _cents;
+  }
+
+  ///@notice The equivant dollar amount of each contribution request.
+  uint256 private amountInUSDCents;
+
+  ///@notice Additional validation rules before token contribution is actually allowed.
+  ///@param _beneficiary The contributor who wishes to purchase the VRH tokens.
+  ///@param _weiAmount The amount of Ethers (in wei) wished to contribute.
+  function _preValidatePurchase(address _beneficiary, uint256 _weiAmount) internal  whenNotPaused ifWhitelisted(_beneficiary) {
+    require(initialized);
+
+    amountInUSDCents  = convertToCents(_weiAmount, etherPriceInCents);
+    require(amountInUSDCents  >= minContributionInUSDCents);
+
+    ///Continue validating the purchaes.
+    super._preValidatePurchase(_beneficiary, _weiAmount);
   }
 
   ///@notice This function is automatically called when a contribution request passes all validations.
@@ -151,9 +160,6 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
 
     ///Ensure that the sale does not exceed allocation.
     require(totalTokensSold.add(_tokenAmount).add(bonus) <= totalSaleAllocation);
-
-    ///Keep track of the provided bonus.
-    bonusProvided = bonusProvided.add(bonus);
 
     ///Assign bonuses so that they can be later withdrawn.
     assignBonus(_beneficiary, bonus);
@@ -180,20 +186,6 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
     }
   }
 
-
-  ///@notice Additional validation rules before token contribution is actually allowed.
-  ///@param _beneficiary The contributor who wishes to purchase the VRH tokens.
-  ///@param _weiAmount The amount of Ethers (in wei) wished to contribute.
-  function _preValidatePurchase(address _beneficiary, uint256 _weiAmount) internal  whenNotPaused ifWhitelisted(_beneficiary) {
-    require(initialized);
-
-    amountInUSDCents  = convertToCents(_weiAmount, etherPriceInCents);
-    require(amountInUSDCents  >= minContributionInUSDCents);
-
-    ///Continue validating the purchaes.
-    super._preValidatePurchase(_beneficiary, _weiAmount);
-  }
-
   ///@notice Converts the amount of Ether (wei) or amount of any token having 18 decimal place divisible 
   ///to cent value based on the cent price supplied.
   function convertToCents(uint256 _weiAmount, uint256 _priceInCents) public pure returns (uint256) {
@@ -208,7 +200,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
 
   ///@dev Used only for test, drop this function before deployment.
   ///@param _weiAmount The total amount of Ether in wei value.
-  function getTokenAmountForWei(uint256 _weiAmount) public view returns (uint256) {
+  function getTokenAmountForWei(uint256 _weiAmount) external view returns (uint256) {
     return _getTokenAmount(_weiAmount);
   }
 
@@ -230,12 +222,19 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
   }
 
 
-  ///@notice Enables the admins to withdraw Binance coin 
+  ///@notice Enables the admins to withdraw Binance coin
   ///or any ERC20 token accidentally sent to this contract.
-  function withdrawToken(address _token) public onlyAdmin {
+  function withdrawToken(address _token) external onlyAdmin {
+    ///This stops admins from stealing the allocated bonus of the investors.
+    ///The bonus VRH tokens should remain in this contract.
+    require(_token != address(this));
+
     ERC20 erc20 = ERC20(_token);
-    
-    erc20.transfer(msg.sender, erc20.balanceOf(this));
+    uint256 balance = erc20.balanceOf(this);
+
+
+    erc20.transfer(msg.sender, balance);
+    emit ERC20Withdrawn(_token, balance);
   }
 
   
@@ -272,7 +271,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
   }
 
   ///@notice Enables the admins to withdraw Ethers present in this contract.
-  function withdrawFunds(uint256 _amount) public whenNotPaused onlyAdmin {
+  function withdrawFunds(uint256 _amount) external whenNotPaused onlyAdmin {
     require(_amount <= address(this).balance);
     msg.sender.transfer(_amount);
 
