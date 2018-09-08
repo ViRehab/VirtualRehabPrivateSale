@@ -137,7 +137,7 @@ contract('Private sale', function(accounts) {
       assert(await privateSale.whitelist(investor2) == false);
     });
 
-    
+
 
     it('only admin can change the max tokens for sale', async () => {
       await erc20.approve(privateSale.address, ether(20));
@@ -169,7 +169,7 @@ contract('Private sale', function(accounts) {
   describe('constant conversion function', () => {
     let privateSale;
     let erc20;
-    
+
     beforeEach(async () => {
       const openingTime = await latestTime() + 10;
       const endingTime = openingTime + duration.days(10);
@@ -307,7 +307,10 @@ contract('Private sale', function(accounts) {
       await privateSale.initializePrivateSale();
       await increaseTimeTo(openingTime + 10);
       await privateSale.addWhitelist(accounts[1]);
+      await privateSale.addWhitelist(accounts[5]);
+
       await privateSale.sendTransaction({ value: ether(0.5) , from: accounts[1] });
+      await privateSale.sendTransaction({ value: ether(0.5), from: accounts[5] });
       bonus = ether(0.35*150000);
     });
 
@@ -317,15 +320,23 @@ contract('Private sale', function(accounts) {
     });
 
     it('bonus can be claimed only release date is set', async () => {
+
       let ICOEndDate = endingTime + 10;
+
       await privateSale.setReleaseDate(ICOEndDate);
       await increaseTimeTo(ICOEndDate + 10);
+      await privateSale.finalizeCrowdsale();
       let b  = await erc20.balanceOf(accounts[1]);
-      let bonus = await privateSale.bonusHolders(accounts[1]);
 
+      let bonus = await privateSale.bonusHolders(accounts[1]);
       await privateSale.withdrawBonus({ from: accounts[1] });
       (await erc20.balanceOf(accounts[1])).should.be.bignumber.equal(b.add(bonus));
+      (await privateSale.bonusWithdrawn()).should.be.bignumber.equal(bonus);
       assert((await privateSale.bonusHolders(accounts[1])).toNumber() == 0);
+      await erc20.transfer(privateSale.address, 1, { from:accounts[1] });
+      await privateSale.addAdmin(accounts[4]);
+      await privateSale.withdrawToken(erc20.address, { from: accounts[4] });
+      assert((await erc20.balanceOf(accounts[4])).toNumber() == 1);
     })
 
     it('bonus can be claimed only by assigned holders', async () => {
@@ -334,6 +345,7 @@ contract('Private sale', function(accounts) {
       await privateSale.setReleaseDate(ICOEndDate);
       await increaseTimeTo(ICOEndDate + duration.weeks(4*4));
       await privateSale.withdrawBonus({from: accounts[2]}).should.be.rejectedWith(EVMRevert);
+
     });
   });
 

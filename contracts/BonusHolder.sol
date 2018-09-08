@@ -79,7 +79,6 @@ contract BonusHolder is CustomPausable {
     require(now > releaseDate);
     uint256 amount = bonusHolders[msg.sender];
     require(amount > 0);
-
     bonusWithdrawn = bonusWithdrawn.add(amount);
     bonusHolders[msg.sender] = 0;
     bonusCoin.transfer(msg.sender, amount);
