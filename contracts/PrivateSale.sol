@@ -225,15 +225,15 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
   ///@notice Enables the admins to withdraw Binance coin
   ///or any ERC20 token accidentally sent to this contract.
   function withdrawToken(address _token) external onlyAdmin {
-    ///This stops admins from stealing the allocated bonus of the investors.
-    ///The bonus VRH tokens should remain in this contract.
-    require(_token != address(this));
-
+    bool isVRH = _token == address(token);
     ERC20 erc20 = ERC20(_token);
     uint256 balance = erc20.balanceOf(this);
-
-
-    erc20.transfer(msg.sender, balance);
+    //This stops admins from stealing the allocated bonus of the investors.
+    ///The bonus VRH tokens should remain in this contract.
+    if(isVRH) {
+      balance = balance.sub(bonusRemaining());
+    }
+    require(erc20.transfer(msg.sender, balance));
     emit ERC20Withdrawn(_token, balance);
   }
 
