@@ -25,15 +25,15 @@ import "./BonusHolder.sol";
 ///@author Binod Nirvan, Subramanian Venkatesan (http://virtualrehab.co)
 ///@notice This contract enables contributors to participate in Virtual Rehab Private Sale.
 ///
-///The Virtual Rehab Private Sale provides early investors with an opportunity 
-///to take part into the Virtual Rehab token sale ahead of the pre-sale and main sale launch. 
-///All early investors are expected to successfully complete KYC and whitelisting 
-///to contribute to the Virtual Rehab token sale. 
+///The Virtual Rehab Private Sale provides early investors with an opportunity
+///to take part into the Virtual Rehab token sale ahead of the pre-sale and main sale launch.
+///All early investors are expected to successfully complete KYC and whitelisting
+///to contribute to the Virtual Rehab token sale.
 ///
-///US investors must be accredited investors and must provide all requested documentation 
-///to validate their accreditation. We, unfortunately, do not accept contributions 
-///from non-accredited investors within the US along with any contribution 
-///from China, Republic of Korea, and New Zealand. Any questions or additional information needed 
+///US investors must be accredited investors and must provide all requested documentation
+///to validate their accreditation. We, unfortunately, do not accept contributions
+///from non-accredited investors within the US along with any contribution
+///from China, Republic of Korea, and New Zealand. Any questions or additional information needed
 ///can be sought by sending an e-mail to investors＠virtualrehab.co.
 ///
 //////Accepted Currencies: Ether, Binance Coin.
@@ -70,7 +70,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
   ///@param _vrhToken VRH token contract.
   ///@param _minContributionInUSDCents The minimum contribution in dollar cent value.
   constructor(uint256 _startTime, uint256 _endTime, uint256 _tokenPriceInCents, uint256 _etherPriceInCents, uint256 _binanceCoinPriceInCents, ERC20 _binanceCoin, ERC20 _vrhToken, uint256 _minContributionInUSDCents) public
-  TimedCrowdsale(_startTime, _endTime) 
+  TimedCrowdsale(_startTime, _endTime)
   Crowdsale(1, msg.sender, _vrhToken)
   TokenPrice(_tokenPriceInCents)
   EtherPrice(_etherPriceInCents)
@@ -112,7 +112,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
 
     ///Calcuate the bonus based on the number of tokens and the dollar cent value.
     uint256 bonus = calculateBonus(numTokens, contributionCents);
-    
+
     require(totalTokensSold.add(numTokens).add(bonus) <= totalSaleAllocation);
 
     ///Receive the Binance coins immeidately.
@@ -186,7 +186,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
     }
   }
 
-  ///@notice Converts the amount of Ether (wei) or amount of any token having 18 decimal place divisible 
+  ///@notice Converts the amount of Ether (wei) or amount of any token having 18 decimal place divisible
   ///to cent value based on the cent price supplied.
   function convertToCents(uint256 _weiAmount, uint256 _priceInCents) public pure returns (uint256) {
     return _weiAmount.mul(_priceInCents).div(10**18);
@@ -237,7 +237,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
     emit ERC20Withdrawn(_token, balance);
   }
 
-  
+
   ///@dev Must be called after crowdsale ends, to do some extra finalization work.
   function finalizeCrowdsale() public onlyAdmin {
     require(!isFinalized);
@@ -276,5 +276,9 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
     msg.sender.transfer(_amount);
 
     emit FundsWithdrawn(msg.sender, _amount);
+  }
+
+  function tokenRemainingForSale() public view returns(uint256) {
+    return totalSaleAllocation.sub(totalTokensSold);
   }
 }
