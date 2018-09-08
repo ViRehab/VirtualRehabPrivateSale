@@ -34,6 +34,8 @@ contract BonusHolder is CustomPausable {
 
   ///@notice The total amount of bonus coins provided to the contributors.
   uint256 public bonusProvided;
+
+  ///@notice The total amount of bonus withdrawn by the contributors.
   uint256 public bonusWithdrawn;
 
   event BonusReleaseDateSet(uint256 _releaseDate);
@@ -42,7 +44,7 @@ contract BonusHolder is CustomPausable {
 
   ///@notice Constructs bonus holder.
   ///@param _bonusCoin The ERC20 token of the coin to hold bonus.
-  constructor(ERC20 _bonusCoin){
+  constructor(ERC20 _bonusCoin) internal {
     bonusCoin = _bonusCoin;
   }
 
@@ -77,11 +79,14 @@ contract BonusHolder is CustomPausable {
   function withdrawBonus() external whenNotPaused {
     require(releaseDate != 0);
     require(now > releaseDate);
+
     uint256 amount = bonusHolders[msg.sender];
     require(amount > 0);
+
     bonusWithdrawn = bonusWithdrawn.add(amount);
+
     bonusHolders[msg.sender] = 0;
-    bonusCoin.transfer(msg.sender, amount);
+    require(bonusCoin.transfer(msg.sender, amount));
 
     emit BonusWithdrawn(msg.sender, amount);
   }

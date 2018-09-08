@@ -23,7 +23,7 @@ contract BinanceCoinPrice is CustomPausable {
 
   event BinanceCoinPriceChanged(uint256 _newPrice, uint256 _oldPrice);
 
-  constructor(uint256 _cents) {
+  constructor(uint256 _cents) internal {
     require(_cents > 0);
 
     binanceCoinPriceInCents = _cents;

@@ -776,7 +776,7 @@ contract TokenPrice is CustomPausable {
 
   event TokenPriceChanged(uint256 _newPrice, uint256 _oldPrice);
 
-  constructor(uint256 _cents) {
+  constructor(uint256 _cents) internal {
     require(_cents > 0);
     tokenPriceInCents  = _cents;
   }
@@ -815,7 +815,7 @@ contract EtherPrice is CustomPausable {
 
   event EtherPriceChanged(uint256 _newPrice, uint256 _oldPrice);
 
-  constructor(uint256 _cents) {
+  constructor(uint256 _cents) internal {
     require(_cents > 0);
 
     etherPriceInCents = _cents;
@@ -856,7 +856,7 @@ contract BinanceCoinPrice is CustomPausable {
 
   event BinanceCoinPriceChanged(uint256 _newPrice, uint256 _oldPrice);
 
-  constructor(uint256 _cents) {
+  constructor(uint256 _cents) internal {
     require(_cents > 0);
 
     binanceCoinPriceInCents = _cents;
@@ -907,13 +907,16 @@ contract BonusHolder is CustomPausable {
   ///@notice The total amount of bonus coins provided to the contributors.
   uint256 public bonusProvided;
 
+  ///@notice The total amount of bonus withdrawn by the contributors.
+  uint256 public bonusWithdrawn;
+
   event BonusReleaseDateSet(uint256 _releaseDate);
   event BonusAssigned(address indexed _address, uint _amount);
   event BonusWithdrawn(address indexed _address, uint _amount);
 
   ///@notice Constructs bonus holder.
   ///@param _bonusCoin The ERC20 token of the coin to hold bonus.
-  constructor(ERC20 _bonusCoin){
+  constructor(ERC20 _bonusCoin) internal {
     bonusCoin = _bonusCoin;
   }
 
@@ -948,31 +951,38 @@ contract BonusHolder is CustomPausable {
   function withdrawBonus() external whenNotPaused {
     require(releaseDate != 0);
     require(now > releaseDate);
+
     uint256 amount = bonusHolders[msg.sender];
     require(amount > 0);
 
-    
+    bonusWithdrawn = bonusWithdrawn.add(amount);
+
     bonusHolders[msg.sender] = 0;
-    bonusCoin.transfer(msg.sender, amount);
+    require(bonusCoin.transfer(msg.sender, amount));
 
     emit BonusWithdrawn(msg.sender, amount);
   }
+
+  function bonusRemaining() public view returns(uint256) {
+    return bonusProvided.sub(bonusWithdrawn);
+  }
 }
+
 
 
 ///@title Virtual Rehab Private Sale.
 ///@author Binod Nirvan, Subramanian Venkatesan (http://virtualrehab.co)
 ///@notice This contract enables contributors to participate in Virtual Rehab Private Sale.
 ///
-///The Virtual Rehab Private Sale provides early investors with an opportunity 
-///to take part into the Virtual Rehab token sale ahead of the pre-sale and main sale launch. 
-///All early investors are expected to successfully complete KYC and whitelisting 
-///to contribute to the Virtual Rehab token sale. 
+///The Virtual Rehab Private Sale provides early investors with an opportunity
+///to take part into the Virtual Rehab token sale ahead of the pre-sale and main sale launch.
+///All early investors are expected to successfully complete KYC and whitelisting
+///to contribute to the Virtual Rehab token sale.
 ///
-///US investors must be accredited investors and must provide all requested documentation 
-///to validate their accreditation. We, unfortunately, do not accept contributions 
-///from non-accredited investors within the US along with any contribution 
-///from China, Republic of Korea, and New Zealand. Any questions or additional information needed 
+///US investors must be accredited investors and must provide all requested documentation
+///to validate their accreditation. We, unfortunately, do not accept contributions
+///from non-accredited investors within the US along with any contribution
+///from China, Republic of Korea, and New Zealand. Any questions or additional information needed
 ///can be sought by sending an e-mail to investors＠virtualrehab.co.
 ///
 //////Accepted Currencies: Ether, Binance Coin.
@@ -1009,7 +1019,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
   ///@param _vrhToken VRH token contract.
   ///@param _minContributionInUSDCents The minimum contribution in dollar cent value.
   constructor(uint256 _startTime, uint256 _endTime, uint256 _tokenPriceInCents, uint256 _etherPriceInCents, uint256 _binanceCoinPriceInCents, ERC20 _binanceCoin, ERC20 _vrhToken, uint256 _minContributionInUSDCents) public
-  TimedCrowdsale(_startTime, _endTime) 
+  TimedCrowdsale(_startTime, _endTime)
   Crowdsale(1, msg.sender, _vrhToken)
   TokenPrice(_tokenPriceInCents)
   EtherPrice(_etherPriceInCents)
@@ -1051,14 +1061,14 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
 
     ///Calcuate the bonus based on the number of tokens and the dollar cent value.
     uint256 bonus = calculateBonus(numTokens, contributionCents);
-    
+
     require(totalTokensSold.add(numTokens).add(bonus) <= totalSaleAllocation);
 
     ///Receive the Binance coins immeidately.
-    binanceCoin.transferFrom(msg.sender, this, allowance);
+    require(binanceCoin.transferFrom(msg.sender, this, allowance));
 
     ///Send the VRH tokens to the contributor.
-    token.transfer(msg.sender, numTokens);
+    require(token.transfer(msg.sender, numTokens));
 
     ///Assign the bonus to be vested and later withdrawn.
     assignBonus(msg.sender, bonus);
@@ -1125,7 +1135,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
     }
   }
 
-  ///@notice Converts the amount of Ether (wei) or amount of any token having 18 decimal place divisible 
+  ///@notice Converts the amount of Ether (wei) or amount of any token having 18 decimal place divisible
   ///to cent value based on the cent price supplied.
   function convertToCents(uint256 _weiAmount, uint256 _priceInCents) public pure returns (uint256) {
     return _weiAmount.mul(_priceInCents).div(10**18);
@@ -1155,7 +1165,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
     totalSaleAllocation = totalSaleAllocation.add(allowance);
 
     ///Transfer (receive) the allocated VRH tokens.
-    token.transferFrom(msg.sender, this, allowance);
+    require(token.transferFrom(msg.sender, this, allowance));
 
     emit TokensAllocatedForSale(totalSaleAllocation, current);
   }
@@ -1164,19 +1174,23 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
   ///@notice Enables the admins to withdraw Binance coin
   ///or any ERC20 token accidentally sent to this contract.
   function withdrawToken(address _token) external onlyAdmin {
-    ///This stops admins from stealing the allocated bonus of the investors.
-    ///The bonus VRH tokens should remain in this contract.
-    require(_token != address(this));
-
+    bool isVRH = _token == address(token);
     ERC20 erc20 = ERC20(_token);
+
     uint256 balance = erc20.balanceOf(this);
 
+    //This stops admins from stealing the allocated bonus of the investors.
+    ///The bonus VRH tokens should remain in this contract.
+    if(isVRH) {
+      balance = balance.sub(bonusRemaining());
+    }
 
-    erc20.transfer(msg.sender, balance);
+    require(erc20.transfer(msg.sender, balance));
+
     emit ERC20Withdrawn(_token, balance);
   }
 
-  
+
   ///@dev Must be called after crowdsale ends, to do some extra finalization work.
   function finalizeCrowdsale() public onlyAdmin {
     require(!isFinalized);
@@ -1185,7 +1199,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
     uint256 unsold = token.balanceOf(this).sub(bonusProvided);
 
     if(unsold > 0) {
-      token.transfer(msg.sender, unsold);
+      require(token.transfer(msg.sender, unsold));
     }
 
     emit Finalized();
@@ -1206,7 +1220,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
 
   ///@notice Stops the crowdsale contract from sending ethers.
   function _forwardFunds() internal {
-    //Swallow
+    //Nothing to do here.
   }
 
   ///@notice Enables the admins to withdraw Ethers present in this contract.
@@ -1215,5 +1229,9 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
     msg.sender.transfer(_amount);
 
     emit FundsWithdrawn(msg.sender, _amount);
+  }
+
+  function tokenRemainingForSale() public view returns(uint256) {
+    return totalSaleAllocation.sub(totalTokensSold);
   }
 }

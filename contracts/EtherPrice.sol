@@ -23,7 +23,7 @@ contract EtherPrice is CustomPausable {
 
   event EtherPriceChanged(uint256 _newPrice, uint256 _oldPrice);
 
-  constructor(uint256 _cents) {
+  constructor(uint256 _cents) internal {
     require(_cents > 0);
 
     etherPriceInCents = _cents;

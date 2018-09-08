@@ -41,7 +41,6 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
   ///@notice The ERC20 token contract of Binance Coin. Must be: 0xB8c77482e45F1F44dE1745F52C74426C631bDD52
   ERC20 public binanceCoin;
 
-
   ///@notice The total amount of VRH tokens sold in the private round.
   uint256 public totalTokensSold;
 
@@ -117,10 +116,10 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
     require(totalTokensSold.add(numTokens).add(bonus) <= totalSaleAllocation);
 
     ///Receive the Binance coins immeidately.
-    binanceCoin.transferFrom(msg.sender, this, allowance);
+    require(binanceCoin.transferFrom(msg.sender, this, allowance));
 
     ///Send the VRH tokens to the contributor.
-    token.transfer(msg.sender, numTokens);
+    require(token.transfer(msg.sender, numTokens));
 
     ///Assign the bonus to be vested and later withdrawn.
     assignBonus(msg.sender, bonus);
@@ -217,7 +216,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
     totalSaleAllocation = totalSaleAllocation.add(allowance);
 
     ///Transfer (receive) the allocated VRH tokens.
-    token.transferFrom(msg.sender, this, allowance);
+    require(token.transferFrom(msg.sender, this, allowance));
 
     emit TokensAllocatedForSale(totalSaleAllocation, current);
   }
@@ -226,16 +225,19 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
   ///@notice Enables the admins to withdraw Binance coin
   ///or any ERC20 token accidentally sent to this contract.
   function withdrawToken(address _token) external onlyAdmin {
-
     bool isVRH = _token == address(token);
     ERC20 erc20 = ERC20(_token);
+
     uint256 balance = erc20.balanceOf(this);
+
     //This stops admins from stealing the allocated bonus of the investors.
     ///The bonus VRH tokens should remain in this contract.
     if(isVRH) {
       balance = balance.sub(bonusRemaining());
     }
+
     require(erc20.transfer(msg.sender, balance));
+
     emit ERC20Withdrawn(_token, balance);
   }
 
@@ -248,7 +250,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
     uint256 unsold = token.balanceOf(this).sub(bonusProvided);
 
     if(unsold > 0) {
-      token.transfer(msg.sender, unsold);
+      require(token.transfer(msg.sender, unsold));
     }
 
     emit Finalized();
@@ -269,7 +271,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
 
   ///@notice Stops the crowdsale contract from sending ethers.
   function _forwardFunds() internal {
-    //Swallow
+    //Nothing to do here.
   }
 
   ///@notice Enables the admins to withdraw Ethers present in this contract.
