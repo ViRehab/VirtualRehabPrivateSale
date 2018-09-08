@@ -41,6 +41,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
   ///@notice The ERC20 token contract of Binance Coin. Must be: 0xB8c77482e45F1F44dE1745F52C74426C631bDD52
   ERC20 public binanceCoin;
 
+
   ///@notice The total amount of VRH tokens sold in the private round.
   uint256 public totalTokensSold;
 
@@ -225,15 +226,16 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
   ///@notice Enables the admins to withdraw Binance coin
   ///or any ERC20 token accidentally sent to this contract.
   function withdrawToken(address _token) external onlyAdmin {
-    ///This stops admins from stealing the allocated bonus of the investors.
-    ///The bonus VRH tokens should remain in this contract.
-    require(_token != address(this));
 
+    bool isVRH = _token == address(token);
     ERC20 erc20 = ERC20(_token);
     uint256 balance = erc20.balanceOf(this);
-
-
-    erc20.transfer(msg.sender, balance);
+    //This stops admins from stealing the allocated bonus of the investors.
+    ///The bonus VRH tokens should remain in this contract.
+    if(isVRH) {
+      balance = balance.sub(bonusRemaining());
+    }
+    require(erc20.transfer(msg.sender, balance));
     emit ERC20Withdrawn(_token, balance);
   }
 
