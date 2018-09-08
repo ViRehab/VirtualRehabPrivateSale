@@ -40,7 +40,7 @@ import "./BonusHolder.sol";
 contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, FinalizableCrowdsale, CustomWhitelist {
   ///@notice The ERC20 token contract of Binance Coin. Must be: 0xB8c77482e45F1F44dE1745F52C74426C631bDD52
   ERC20 public binanceCoin;
-  address public _temp;
+
 
   ///@notice The total amount of VRH tokens sold in the private round.
   uint256 public totalTokensSold;
@@ -233,7 +233,6 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
     //This stops admins from stealing the allocated bonus of the investors.
     ///The bonus VRH tokens should remain in this contract.
     if(isVRH) {
-      _temp = address(token);
       balance = balance.sub(bonusRemaining());
     }
     require(erc20.transfer(msg.sender, balance));
