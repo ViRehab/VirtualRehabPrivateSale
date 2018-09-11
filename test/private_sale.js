@@ -169,6 +169,8 @@ contract('Private sale', function(accounts) {
       let endTime = await latestTime() + duration.days(1);
       await privateSale.changeClosingTime(endTime);
       assert((await privateSale.closingTime()).toNumber() === endTime);
+      await privateSale.changeClosingTime(endTime, {from: accounts[2]})
+      .should.be.rejectedWith(EVMRevert);
     });
   })
 
