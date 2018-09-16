@@ -164,6 +164,14 @@ contract('Private sale', function(accounts) {
       privateSale.withdrawToken(erc20.address, { from: accounts[1] });
       (await erc20.balanceOf(accounts[1])).should.be.bignumber.equal(ether(1));
     })
+
+    it('only admin can change the closing time', async () => {
+      let endTime = await latestTime() + duration.days(1);
+      await privateSale.changeClosingTime(endTime);
+      assert((await privateSale.closingTime()).toNumber() === endTime);
+      await privateSale.changeClosingTime(endTime, {from: accounts[2]})
+      .should.be.rejectedWith(EVMRevert);
+    });
   })
 
   describe('constant conversion function', () => {

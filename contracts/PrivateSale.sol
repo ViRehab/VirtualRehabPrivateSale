@@ -282,6 +282,10 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
     emit FundsWithdrawn(msg.sender, _amount);
   }
 
+  function changeClosingTime(uint256 _closingTime) external whenNotPaused onlyAdmin {
+    closingTime = _closingTime;
+  }
+
   function tokenRemainingForSale() public view returns(uint256) {
     return totalSaleAllocation.sub(totalTokensSold);
   }
