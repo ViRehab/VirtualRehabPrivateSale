@@ -18,6 +18,7 @@ import "./CustomWhitelist.sol";
 import "./TokenPrice.sol";
 import "./EtherPrice.sol";
 import "./BinanceCoinPrice.sol";
+import "./CreditsTokenPrice.sol";
 import "./BonusHolder.sol";
 
 
@@ -37,9 +38,12 @@ import "./BonusHolder.sol";
 ///can be sought by sending an e-mail to investors＠virtualrehab.co.
 ///
 //////Accepted Currencies: Ether, Binance Coin.
-contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, FinalizableCrowdsale, CustomWhitelist {
+contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPrice, BonusHolder, FinalizableCrowdsale, CustomWhitelist {
   ///@notice The ERC20 token contract of Binance Coin. Must be: 0xB8c77482e45F1F44dE1745F52C74426C631bDD52
   ERC20 public binanceCoin;
+
+  ///@notice The ERC20 token contract of Credits Token. Must be: 0x46b9Ad944d1059450Da1163511069C718F699D31
+  ERC20 public creditsToken;
 
   ///@notice The total amount of VRH tokens sold in the private round.
   uint256 public totalTokensSold;
@@ -67,26 +71,30 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
   ///@param _etherPriceInCents The price of Ether in cents.
   ///@param _binanceCoinPriceInCents The price of Binance coin in cents.
   ///@param _binanceCoin Binance coin contract. Must be: 0xB8c77482e45F1F44dE1745F52C74426C631bDD52.
+  ///@param _creditsToken credits Token contract. Must be: 0x46b9Ad944d1059450Da1163511069C718F699D31.
   ///@param _vrhToken VRH token contract.
   ///@param _minContributionInUSDCents The minimum contribution in dollar cent value.
-  constructor(uint256 _startTime, uint256 _endTime, uint256 _tokenPriceInCents, uint256 _etherPriceInCents, uint256 _binanceCoinPriceInCents, ERC20 _binanceCoin, ERC20 _vrhToken, uint256 _minContributionInUSDCents) public
+  constructor(uint256 _startTime, uint256 _endTime, uint256 _tokenPriceInCents, uint256 _etherPriceInCents, uint256 _binanceCoinPriceInCents, ERC20 _binanceCoin, ERC20 _creditsToken, ERC20 _vrhToken, uint256 _minContributionInUSDCents) public
   TimedCrowdsale(_startTime, _endTime)
   Crowdsale(1, msg.sender, _vrhToken)
   TokenPrice(_tokenPriceInCents)
   EtherPrice(_etherPriceInCents)
   BinanceCoinPrice(_binanceCoinPriceInCents)
+  CreditsTokenPrice(1)
   BonusHolder(_vrhToken) {
     require(_minContributionInUSDCents > 0);
     //require(address(_binanceCoin) == 0xB8c77482e45F1F44dE1745F52C74426C631bDD52);
-
+    creditsToken = _creditsToken;
     binanceCoin = _binanceCoin;
     minContributionInUSDCents = _minContributionInUSDCents;
   }
 
   ///@notice Initializes the private sale.
-  function initializePrivateSale() external onlyAdmin {
+  ///@param _creditsTokenPriceInCents Credits Token Price in cents
+  function initializePrivateSale(uint _creditsTokenPriceInCents) external onlyAdmin {
     require(!initialized);
-
+    require(_creditsTokenPriceInCents > 0);
+    setCreditsTokenPrice(_creditsTokenPriceInCents);
     increaseTokenSaleAllocation();
 
     initialized = true;
@@ -117,6 +125,38 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
 
     ///Receive the Binance coins immeidately.
     require(binanceCoin.transferFrom(msg.sender, this, allowance));
+
+    ///Send the VRH tokens to the contributor.
+    require(token.transfer(msg.sender, numTokens));
+
+    ///Assign the bonus to be vested and later withdrawn.
+    assignBonus(msg.sender, bonus);
+
+    totalTokensSold = totalTokensSold.add(numTokens).add(bonus);
+  }
+
+  function contributeInCreditsToken() external ifWhitelisted(msg.sender) whenNotPaused onlyWhileOpen {
+    require(initialized);
+
+    ///Check the amount of Binance coins allowed to (be transferred by) this contract by the contributor.
+    uint256 allowance = creditsToken.allowance(msg.sender, this);
+
+    ///Calculate equivalent amount in dollar cent value.
+    uint256 contributionCents  = convertToCents(allowance, creditsTokenPriceInCents);
+
+    ///Check if the contribution can be accepted.
+    require(contributionCents  >= minContributionInUSDCents);
+
+    ///Calcuate the amount of tokens per the contribution.
+    uint256 numTokens = contributionCents.mul(10**18).div(tokenPriceInCents);
+
+    ///Calcuate the bonus based on the number of tokens and the dollar cent value.
+    uint256 bonus = calculateBonus(numTokens, contributionCents);
+
+    require(totalTokensSold.add(numTokens).add(bonus) <= totalSaleAllocation);
+
+    ///Receive the credits Token immeidately.
+    require(creditsToken.transferFrom(msg.sender, this, allowance));
 
     ///Send the VRH tokens to the contributor.
     require(token.transfer(msg.sender, numTokens));
