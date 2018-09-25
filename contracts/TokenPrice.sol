@@ -26,7 +26,7 @@ contract TokenPrice is CustomPausable {
 
   function setTokenPrice(uint256 _cents) public onlyAdmin whenNotPaused {
     require(_cents > 0);
-
+    
     emit TokenPriceChanged(_cents, tokenPriceInCents );
     tokenPriceInCents  = _cents;
   }

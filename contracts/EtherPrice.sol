@@ -23,7 +23,6 @@ contract EtherPrice is CustomPausable {
 
   event EtherPriceChanged(uint256 _newPrice, uint256 _oldPrice);
 
-
   function setEtherPrice(uint256 _cents) public whenNotPaused onlyAdmin {
     require(_cents > 0);
 

@@ -25,19 +25,19 @@ import "./BonusHolder.sol";
 ///@title Virtual Rehab Private Sale.
 ///@author Binod Nirvan, Subramanian Venkatesan (http://virtualrehab.co)
 ///@notice This contract enables contributors to participate in Virtual Rehab Private Sale.
-///
+/// 
 ///The Virtual Rehab Private Sale provides early investors with an opportunity
 ///to take part into the Virtual Rehab token sale ahead of the pre-sale and main sale launch.
 ///All early investors are expected to successfully complete KYC and whitelisting
 ///to contribute to the Virtual Rehab token sale.
-///
+/// 
 ///US investors must be accredited investors and must provide all requested documentation
 ///to validate their accreditation. We, unfortunately, do not accept contributions
 ///from non-accredited investors within the US along with any contribution
 ///from China, Republic of Korea, and New Zealand. Any questions or additional information needed
 ///can be sought by sending an e-mail to investors＠virtualrehab.co.
-///
-//////Accepted Currencies: Ether, Binance Coin.
+/// 
+///Accepted Currencies: Ether, Binance Coin.
 contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPrice, BonusHolder, FinalizableCrowdsale, CustomWhitelist {
   ///@notice The ERC20 token contract of Binance Coin. Must be: 0xB8c77482e45F1F44dE1745F52C74426C631bDD52
   ERC20 public binanceCoin;
@@ -84,17 +84,20 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
   ///@param _tokenPriceInCents VRHToken Price in cents
   ///@param _binanceCoinPriceInCents Binance Coin Price in cents
   ///@param _creditsTokenPriceInCents Credits Token Price in cents
-  ///@param _minContributionInUSDCents The minimum contribution in dollar cent value.
+  ///@param _minContributionInUSDCents The minimum contribution in dollar cent value
   function initializePrivateSale(uint _etherPriceInCents, uint _tokenPriceInCents, uint _binanceCoinPriceInCents, uint _creditsTokenPriceInCents, uint _minContributionInUSDCents) external onlyAdmin {
     require(!initialized);
     require(_etherPriceInCents > 0);
     require(_tokenPriceInCents > 0);
+
     setEtherPrice(_etherPriceInCents);
     setTokenPrice(_tokenPriceInCents);
     setBinanceCoinPrice(_binanceCoinPriceInCents);
     setCreditsTokenPrice(_creditsTokenPriceInCents);
     setMinimumContribution(_minContributionInUSDCents);
+
     increaseTokenSaleAllocation();
+    
     initialized = true;
     emit SaleInitialized();
   }
@@ -112,15 +115,15 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
     ///Check if the contribution can be accepted.
     require(contributionCents  >= minContributionInUSDCents);
 
-    ///Calcuate the amount of tokens per the contribution.
-    uint256 numTokens = contributionCents.mul(10**18).div(tokenPriceInCents);
+    ///Calculate the amount of tokens per the contribution.
+    uint256 numTokens = contributionCents.mul(1 ether).div(tokenPriceInCents);
 
-    ///Calcuate the bonus based on the number of tokens and the dollar cent value.
+    ///Calculate the bonus based on the number of tokens and the dollar cent value.
     uint256 bonus = calculateBonus(numTokens, contributionCents);
 
     require(totalTokensSold.add(numTokens).add(bonus) <= totalSaleAllocation);
 
-    ///Receive the Binance coins immeidately.
+    ///Receive the Binance coins immediately.
     require(binanceCoin.transferFrom(msg.sender, this, allowance));
 
     ///Send the VRH tokens to the contributor.
@@ -139,20 +142,20 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
     uint256 allowance = creditsToken.allowance(msg.sender, this);
 
     ///Calculate equivalent amount in dollar cent value.
-    uint256 contributionCents  = convertToCents(allowance, creditsTokenPriceInCents);
+    uint256 contributionCents = convertToCents(allowance, creditsTokenPriceInCents);
 
     ///Check if the contribution can be accepted.
-    require(contributionCents  >= minContributionInUSDCents);
+    require(contributionCents >= minContributionInUSDCents);
 
-    ///Calcuate the amount of tokens per the contribution.
-    uint256 numTokens = contributionCents.mul(10**18).div(tokenPriceInCents);
+    ///Calculate the amount of tokens per the contribution.
+    uint256 numTokens = contributionCents.mul(1 ether).div(tokenPriceInCents);
 
-    ///Calcuate the bonus based on the number of tokens and the dollar cent value.
+    ///Calculate the bonus based on the number of tokens and the dollar cent value.
     uint256 bonus = calculateBonus(numTokens, contributionCents);
 
     require(totalTokensSold.add(numTokens).add(bonus) <= totalSaleAllocation);
 
-    ///Receive the credits Token immeidately.
+    ///Receive the Credits Token immediately.
     require(creditsToken.transferFrom(msg.sender, this, allowance));
 
     ///Send the VRH tokens to the contributor.
@@ -171,24 +174,24 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
     minContributionInUSDCents = _cents;
   }
 
-  ///@notice The equivant dollar amount of each contribution request.
+  ///@notice The equivalent dollar amount of each contribution request.
   uint256 private amountInUSDCents;
 
   ///@notice Additional validation rules before token contribution is actually allowed.
   ///@param _beneficiary The contributor who wishes to purchase the VRH tokens.
   ///@param _weiAmount The amount of Ethers (in wei) wished to contribute.
-  function _preValidatePurchase(address _beneficiary, uint256 _weiAmount) internal  whenNotPaused ifWhitelisted(_beneficiary) {
+  function _preValidatePurchase(address _beneficiary, uint256 _weiAmount) internal whenNotPaused ifWhitelisted(_beneficiary) {
     require(initialized);
 
-    amountInUSDCents  = convertToCents(_weiAmount, etherPriceInCents);
-    require(amountInUSDCents  >= minContributionInUSDCents);
+    amountInUSDCents = convertToCents(_weiAmount, etherPriceInCents);
+    require(amountInUSDCents >= minContributionInUSDCents);
 
-    ///Continue validating the purchaes.
+    ///Continue validating the purchase.
     super._preValidatePurchase(_beneficiary, _weiAmount);
   }
 
   ///@notice This function is automatically called when a contribution request passes all validations.
-  ///@dev Overriden to keep track of the bonuses.
+  ///@dev Overridden to keep track of the bonuses.
   ///@param _beneficiary The contributor who wishes to purchase the VRH tokens.
   ///@param _tokenAmount The amount of tokens wished to purchase.
   function _processPurchase(address _beneficiary, uint256 _tokenAmount) internal {
@@ -226,7 +229,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
   ///@notice Converts the amount of Ether (wei) or amount of any token having 18 decimal place divisible
   ///to cent value based on the cent price supplied.
   function convertToCents(uint256 _weiAmount, uint256 _priceInCents) public pure returns (uint256) {
-    return _weiAmount.mul(_priceInCents).div(10**18);
+    return _weiAmount.mul(_priceInCents).div(1 ether);
   }
 
   ///@notice Calculates the number of VRH tokens for the supplied wei value.

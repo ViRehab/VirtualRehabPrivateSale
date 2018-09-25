@@ -776,15 +776,9 @@ contract TokenPrice is CustomPausable {
 
   event TokenPriceChanged(uint256 _newPrice, uint256 _oldPrice);
 
-  constructor(uint256 _cents) internal {
+  function setTokenPrice(uint256 _cents) public onlyAdmin whenNotPaused {
     require(_cents > 0);
-    tokenPriceInCents  = _cents;
-  }
-
-
-  function setTokenPrice(uint256 _cents) external onlyAdmin whenNotPaused {
-    require(_cents > 0);
-
+    
     emit TokenPriceChanged(_cents, tokenPriceInCents );
     tokenPriceInCents  = _cents;
   }
@@ -815,17 +809,9 @@ contract EtherPrice is CustomPausable {
 
   event EtherPriceChanged(uint256 _newPrice, uint256 _oldPrice);
 
-  constructor(uint256 _cents) internal {
+  function setEtherPrice(uint256 _cents) public whenNotPaused onlyAdmin {
     require(_cents > 0);
 
-    etherPriceInCents = _cents;
-
-    emit EtherPriceChanged(0, etherPriceInCents);
-  }
-
-  function setEtherPrice(uint256 _cents) external whenNotPaused onlyAdmin {
-    require(_cents > 0);
-    
     emit EtherPriceChanged(_cents, etherPriceInCents);
     etherPriceInCents = _cents;
   }
@@ -846,7 +832,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
  */
- 
+
  
 
 
@@ -856,20 +842,47 @@ contract BinanceCoinPrice is CustomPausable {
 
   event BinanceCoinPriceChanged(uint256 _newPrice, uint256 _oldPrice);
 
-  constructor(uint256 _cents) internal {
-    require(_cents > 0);
-
-    binanceCoinPriceInCents = _cents;
-    emit BinanceCoinPriceChanged(0, _cents);
-  }
-
-  function setBinanceCoinPrice(uint256 _cents) external whenNotPaused onlyAdmin {
+  function setBinanceCoinPrice(uint256 _cents) public whenNotPaused onlyAdmin {
     require(_cents > 0);
 
     emit BinanceCoinPriceChanged(_cents, binanceCoinPriceInCents);
     binanceCoinPriceInCents = _cents;
   }
 }
+
+/*
+Copyright 2018 Binod Nirvan, Subramanian Venkatesan
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+ */
+
+ 
+
+
+///@title This contract keeps track of Credits Token price.
+contract CreditsTokenPrice is CustomPausable {
+  uint256 public creditsTokenPriceInCents;
+
+  event CreditsTokenPriceChanged(uint256 _newPrice, uint256 _oldPrice);
+
+  function setCreditsTokenPrice(uint256 _cents) public whenNotPaused onlyAdmin {
+    require(_cents > 0);
+
+    emit CreditsTokenPriceChanged(_cents, creditsTokenPriceInCents);
+    creditsTokenPriceInCents = _cents;
+  }
+}
+
 /*
 Copyright 2018 Binod Nirvan, Subramanian Venkatesan
 
@@ -973,22 +986,25 @@ contract BonusHolder is CustomPausable {
 ///@title Virtual Rehab Private Sale.
 ///@author Binod Nirvan, Subramanian Venkatesan (http://virtualrehab.co)
 ///@notice This contract enables contributors to participate in Virtual Rehab Private Sale.
-///
+/// 
 ///The Virtual Rehab Private Sale provides early investors with an opportunity
 ///to take part into the Virtual Rehab token sale ahead of the pre-sale and main sale launch.
 ///All early investors are expected to successfully complete KYC and whitelisting
 ///to contribute to the Virtual Rehab token sale.
-///
+/// 
 ///US investors must be accredited investors and must provide all requested documentation
 ///to validate their accreditation. We, unfortunately, do not accept contributions
 ///from non-accredited investors within the US along with any contribution
 ///from China, Republic of Korea, and New Zealand. Any questions or additional information needed
 ///can be sought by sending an e-mail to investors＠virtualrehab.co.
-///
-//////Accepted Currencies: Ether, Binance Coin.
-contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, FinalizableCrowdsale, CustomWhitelist {
+/// 
+///Accepted Currencies: Ether, Binance Coin.
+contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPrice, BonusHolder, FinalizableCrowdsale, CustomWhitelist {
   ///@notice The ERC20 token contract of Binance Coin. Must be: 0xB8c77482e45F1F44dE1745F52C74426C631bDD52
   ERC20 public binanceCoin;
+
+  ///@notice The ERC20 token contract of Credits Token. Must be: 0x46b9Ad944d1059450Da1163511069C718F699D31
+  ERC20 public creditsToken;
 
   ///@notice The total amount of VRH tokens sold in the private round.
   uint256 public totalTokensSold;
@@ -1012,34 +1028,38 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
   ///@notice Creates and constructs this private sale contract.
   ///@param _startTime The date and time of the private sale start.
   ///@param _endTime The date and time of the private sale end.
-  ///@param _tokenPriceInCents The price per VRH token in cents.
-  ///@param _etherPriceInCents The price of Ether in cents.
-  ///@param _binanceCoinPriceInCents The price of Binance coin in cents.
   ///@param _binanceCoin Binance coin contract. Must be: 0xB8c77482e45F1F44dE1745F52C74426C631bDD52.
+  ///@param _creditsToken credits Token contract. Must be: 0x46b9Ad944d1059450Da1163511069C718F699D31.
   ///@param _vrhToken VRH token contract.
-  ///@param _minContributionInUSDCents The minimum contribution in dollar cent value.
-  constructor(uint256 _startTime, uint256 _endTime, uint256 _tokenPriceInCents, uint256 _etherPriceInCents, uint256 _binanceCoinPriceInCents, ERC20 _binanceCoin, ERC20 _vrhToken, uint256 _minContributionInUSDCents) public
+  constructor(uint256 _startTime, uint256 _endTime, ERC20 _binanceCoin, ERC20 _creditsToken, ERC20 _vrhToken) public
   TimedCrowdsale(_startTime, _endTime)
   Crowdsale(1, msg.sender, _vrhToken)
-  TokenPrice(_tokenPriceInCents)
-  EtherPrice(_etherPriceInCents)
-  BinanceCoinPrice(_binanceCoinPriceInCents)
   BonusHolder(_vrhToken) {
-    require(_minContributionInUSDCents > 0);
     //require(address(_binanceCoin) == 0xB8c77482e45F1F44dE1745F52C74426C631bDD52);
-
+    creditsToken = _creditsToken;
     binanceCoin = _binanceCoin;
-    minContributionInUSDCents = _minContributionInUSDCents;
   }
 
   ///@notice Initializes the private sale.
-  function initializePrivateSale() external onlyAdmin {
+  ///@param _etherPriceInCents Ether Price in cents
+  ///@param _tokenPriceInCents VRHToken Price in cents
+  ///@param _binanceCoinPriceInCents Binance Coin Price in cents
+  ///@param _creditsTokenPriceInCents Credits Token Price in cents
+  ///@param _minContributionInUSDCents The minimum contribution in dollar cent value
+  function initializePrivateSale(uint _etherPriceInCents, uint _tokenPriceInCents, uint _binanceCoinPriceInCents, uint _creditsTokenPriceInCents, uint _minContributionInUSDCents) external onlyAdmin {
     require(!initialized);
+    require(_etherPriceInCents > 0);
+    require(_tokenPriceInCents > 0);
+
+    setEtherPrice(_etherPriceInCents);
+    setTokenPrice(_tokenPriceInCents);
+    setBinanceCoinPrice(_binanceCoinPriceInCents);
+    setCreditsTokenPrice(_creditsTokenPriceInCents);
+    setMinimumContribution(_minContributionInUSDCents);
 
     increaseTokenSaleAllocation();
-
+    
     initialized = true;
-
     emit SaleInitialized();
   }
 
@@ -1056,15 +1076,15 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
     ///Check if the contribution can be accepted.
     require(contributionCents  >= minContributionInUSDCents);
 
-    ///Calcuate the amount of tokens per the contribution.
-    uint256 numTokens = contributionCents.mul(10**18).div(tokenPriceInCents);
+    ///Calculate the amount of tokens per the contribution.
+    uint256 numTokens = contributionCents.mul(1 ether).div(tokenPriceInCents);
 
-    ///Calcuate the bonus based on the number of tokens and the dollar cent value.
+    ///Calculate the bonus based on the number of tokens and the dollar cent value.
     uint256 bonus = calculateBonus(numTokens, contributionCents);
 
     require(totalTokensSold.add(numTokens).add(bonus) <= totalSaleAllocation);
 
-    ///Receive the Binance coins immeidately.
+    ///Receive the Binance coins immediately.
     require(binanceCoin.transferFrom(msg.sender, this, allowance));
 
     ///Send the VRH tokens to the contributor.
@@ -1076,31 +1096,63 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
     totalTokensSold = totalTokensSold.add(numTokens).add(bonus);
   }
 
-  function setMinimumContribution(uint256 _cents) external whenNotPaused onlyAdmin {
+  function contributeInCreditsToken() external ifWhitelisted(msg.sender) whenNotPaused onlyWhileOpen {
+    require(initialized);
+
+    ///Check the amount of Binance coins allowed to (be transferred by) this contract by the contributor.
+    uint256 allowance = creditsToken.allowance(msg.sender, this);
+
+    ///Calculate equivalent amount in dollar cent value.
+    uint256 contributionCents = convertToCents(allowance, creditsTokenPriceInCents);
+
+    ///Check if the contribution can be accepted.
+    require(contributionCents >= minContributionInUSDCents);
+
+    ///Calculate the amount of tokens per the contribution.
+    uint256 numTokens = contributionCents.mul(1 ether).div(tokenPriceInCents);
+
+    ///Calculate the bonus based on the number of tokens and the dollar cent value.
+    uint256 bonus = calculateBonus(numTokens, contributionCents);
+
+    require(totalTokensSold.add(numTokens).add(bonus) <= totalSaleAllocation);
+
+    ///Receive the Credits Token immediately.
+    require(creditsToken.transferFrom(msg.sender, this, allowance));
+
+    ///Send the VRH tokens to the contributor.
+    require(token.transfer(msg.sender, numTokens));
+
+    ///Assign the bonus to be vested and later withdrawn.
+    assignBonus(msg.sender, bonus);
+
+    totalTokensSold = totalTokensSold.add(numTokens).add(bonus);
+  }
+
+  function setMinimumContribution(uint256 _cents) public whenNotPaused onlyAdmin {
     require(_cents > 0);
 
     emit MinimumContributionChanged(minContributionInUSDCents, _cents);
     minContributionInUSDCents = _cents;
   }
 
-  ///@notice The equivant dollar amount of each contribution request.
+  ///@notice The equivalent dollar amount of each contribution request.
   uint256 private amountInUSDCents;
 
   ///@notice Additional validation rules before token contribution is actually allowed.
   ///@param _beneficiary The contributor who wishes to purchase the VRH tokens.
   ///@param _weiAmount The amount of Ethers (in wei) wished to contribute.
-  function _preValidatePurchase(address _beneficiary, uint256 _weiAmount) internal  whenNotPaused ifWhitelisted(_beneficiary) {
+  function _preValidatePurchase(address _beneficiary, uint256 _weiAmount) internal whenNotPaused ifWhitelisted(_beneficiary) {
     require(initialized);
 
-    amountInUSDCents  = convertToCents(_weiAmount, etherPriceInCents);
-    require(amountInUSDCents  >= minContributionInUSDCents);
+    amountInUSDCents = convertToCents(_weiAmount, etherPriceInCents);
+    require(amountInUSDCents >= minContributionInUSDCents);
 
-    ///Continue validating the purchaes.
+    ///Continue validating the purchase.
     super._preValidatePurchase(_beneficiary, _weiAmount);
   }
 
   ///@notice This function is automatically called when a contribution request passes all validations.
-  ///@dev Overriden to keep track of the bonuses.
+  ///@dev Overridden to keep track of the bonuses.
   ///@param _beneficiary The contributor who wishes to purchase the VRH tokens.
   ///@param _tokenAmount The amount of tokens wished to purchase.
   function _processPurchase(address _beneficiary, uint256 _tokenAmount) internal {
@@ -1138,7 +1190,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
   ///@notice Converts the amount of Ether (wei) or amount of any token having 18 decimal place divisible
   ///to cent value based on the cent price supplied.
   function convertToCents(uint256 _weiAmount, uint256 _priceInCents) public pure returns (uint256) {
-    return _weiAmount.mul(_priceInCents).div(10**18);
+    return _weiAmount.mul(_priceInCents).div(1 ether);
   }
 
   ///@notice Calculates the number of VRH tokens for the supplied wei value.
@@ -1229,6 +1281,10 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, BonusHolder, F
     msg.sender.transfer(_amount);
 
     emit FundsWithdrawn(msg.sender, _amount);
+  }
+
+  function changeClosingTime(uint256 _closingTime) external whenNotPaused onlyAdmin {
+    closingTime = _closingTime;
   }
 
   function tokenRemainingForSale() public view returns(uint256) {

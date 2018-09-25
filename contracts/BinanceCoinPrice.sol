@@ -23,7 +23,6 @@ contract BinanceCoinPrice is CustomPausable {
 
   event BinanceCoinPriceChanged(uint256 _newPrice, uint256 _oldPrice);
 
-
   function setBinanceCoinPrice(uint256 _cents) public whenNotPaused onlyAdmin {
     require(_cents > 0);
 

@@ -30,6 +30,8 @@ For any additional information pertaining to the Virtual Rehab Private Sale, kin
 
 Thank you in advance for your support.
 
+[Documentation](docs/PrivateSale.md)
+
 # About Virtual Rehab
 
 Virtual Rehab's evidence-based solution leverages the advancements in virtual reality, artificial intelligence, and blockchain technologies for pain management, prevention of substance use disorders, and rehabilitation of repeat offenders. 
