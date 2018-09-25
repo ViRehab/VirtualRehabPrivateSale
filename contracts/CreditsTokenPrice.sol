@@ -12,22 +12,22 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/
+ */
 
-pragma solidity 0.4.24;
+ pragma solidity 0.4.24;
 import "./CustomPausable.sol";
 
-///@title This contract keeps track of the VRH token price.
-contract TokenPrice is CustomPausable {
-  ///@notice The price per token in cents.
-  uint256 public tokenPriceInCents;
+///@title This contract keeps track of Credits Token price.
+contract CreditsTokenPrice is CustomPausable {
+  uint256 public creditsTokenPriceInCents;
 
-  event TokenPriceChanged(uint256 _newPrice, uint256 _oldPrice);
+  event CreditsTokenPriceChanged(uint256 _newPrice, uint256 _oldPrice);
 
-  function setTokenPrice(uint256 _cents) public onlyAdmin whenNotPaused {
+
+  function setCreditsTokenPrice(uint256 _cents) public whenNotPaused onlyAdmin {
     require(_cents > 0);
 
-    emit TokenPriceChanged(_cents, tokenPriceInCents );
-    tokenPriceInCents  = _cents;
+    emit CreditsTokenPriceChanged(_cents, creditsTokenPriceInCents);
+    creditsTokenPriceInCents = _cents;
   }
 }
