@@ -24,16 +24,13 @@ contract EtherPrice is CustomPausable {
   event EtherPriceChanged(uint256 _newPrice, uint256 _oldPrice);
 
   constructor(uint256 _cents) internal {
-    require(_cents > 0);
-
     etherPriceInCents = _cents;
-
     emit EtherPriceChanged(0, etherPriceInCents);
   }
 
-  function setEtherPrice(uint256 _cents) external whenNotPaused onlyAdmin {
+  function setEtherPrice(uint256 _cents) public whenNotPaused onlyAdmin {
     require(_cents > 0);
-    
+
     emit EtherPriceChanged(_cents, etherPriceInCents);
     etherPriceInCents = _cents;
   }

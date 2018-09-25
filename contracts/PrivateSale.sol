@@ -67,38 +67,39 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
   ///@notice Creates and constructs this private sale contract.
   ///@param _startTime The date and time of the private sale start.
   ///@param _endTime The date and time of the private sale end.
-  ///@param _tokenPriceInCents The price per VRH token in cents.
-  ///@param _etherPriceInCents The price of Ether in cents.
-  ///@param _binanceCoinPriceInCents The price of Binance coin in cents.
   ///@param _binanceCoin Binance coin contract. Must be: 0xB8c77482e45F1F44dE1745F52C74426C631bDD52.
   ///@param _creditsToken credits Token contract. Must be: 0x46b9Ad944d1059450Da1163511069C718F699D31.
   ///@param _vrhToken VRH token contract.
-  ///@param _minContributionInUSDCents The minimum contribution in dollar cent value.
-  constructor(uint256 _startTime, uint256 _endTime, uint256 _tokenPriceInCents, uint256 _etherPriceInCents, uint256 _binanceCoinPriceInCents, ERC20 _binanceCoin, ERC20 _creditsToken, ERC20 _vrhToken, uint256 _minContributionInUSDCents) public
+  constructor(uint256 _startTime, uint256 _endTime, ERC20 _binanceCoin, ERC20 _creditsToken, ERC20 _vrhToken) public
   TimedCrowdsale(_startTime, _endTime)
   Crowdsale(1, msg.sender, _vrhToken)
-  TokenPrice(_tokenPriceInCents)
-  EtherPrice(_etherPriceInCents)
-  BinanceCoinPrice(_binanceCoinPriceInCents)
+  TokenPrice(1)
+  EtherPrice(1)
+  BinanceCoinPrice(1)
   CreditsTokenPrice(1)
   BonusHolder(_vrhToken) {
-    require(_minContributionInUSDCents > 0);
     //require(address(_binanceCoin) == 0xB8c77482e45F1F44dE1745F52C74426C631bDD52);
     creditsToken = _creditsToken;
     binanceCoin = _binanceCoin;
-    minContributionInUSDCents = _minContributionInUSDCents;
   }
 
   ///@notice Initializes the private sale.
+  ///@param _etherPriceInCents Ether Price in cents
+  ///@param _tokenPriceInCents VRHToken Price in cents
+  ///@param _binanceCoinPriceInCents Binance Coin Price in cents
   ///@param _creditsTokenPriceInCents Credits Token Price in cents
-  function initializePrivateSale(uint _creditsTokenPriceInCents) external onlyAdmin {
+  ///@param _minContributionInUSDCents The minimum contribution in dollar cent value.
+  function initializePrivateSale(uint _etherPriceInCents, uint _tokenPriceInCents, uint _binanceCoinPriceInCents, uint _creditsTokenPriceInCents, uint _minContributionInUSDCents) external onlyAdmin {
     require(!initialized);
-    require(_creditsTokenPriceInCents > 0);
+    require(_etherPriceInCents > 0);
+    require(_tokenPriceInCents > 0);
+    setEtherPrice(_etherPriceInCents);
+    setTokenPrice(_tokenPriceInCents);
+    setBinanceCoinPrice(_binanceCoinPriceInCents);
     setCreditsTokenPrice(_creditsTokenPriceInCents);
+    setMinimumContribution(_minContributionInUSDCents);
     increaseTokenSaleAllocation();
-
     initialized = true;
-
     emit SaleInitialized();
   }
 
@@ -167,7 +168,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
     totalTokensSold = totalTokensSold.add(numTokens).add(bonus);
   }
 
-  function setMinimumContribution(uint256 _cents) external whenNotPaused onlyAdmin {
+  function setMinimumContribution(uint256 _cents) public whenNotPaused onlyAdmin {
     require(_cents > 0);
 
     emit MinimumContributionChanged(minContributionInUSDCents, _cents);

@@ -17,23 +17,16 @@ require('chai')
 contract('Private sale', function(accounts) {
   describe('Private Sale Creation', () => {
     it('should deploy with correct parameters', async () => {
-      const tokenPriceInCents = 60;
-      const minContributionInUSDCents  = 15000;
-      const etherPriceInCents = 30000;
-      const binanceCoinPriceInCents = 1138;
+      // const minContributionInUSDCents  = 15000;
       const startTime = await latestTime() + duration.days(1);
       const endTime = startTime + duration.years(1);
       const binanceCoin = accounts[1];
       const creditsToken = accounts[2];
       const ERC20 = accounts[2];
-      const privateSale = await PrivateSale.new(startTime, endTime, tokenPriceInCents, etherPriceInCents, binanceCoinPriceInCents, binanceCoin, creditsToken, ERC20, minContributionInUSDCents );
-      assert((await privateSale.tokenPriceInCents()).toNumber() == tokenPriceInCents);
+      const privateSale = await PrivateSale.new(startTime, endTime, binanceCoin, creditsToken, ERC20);
       assert((await privateSale.totalSaleAllocation()).toNumber() == 0);
-      assert((await privateSale.minContributionInUSDCents ()).toNumber() == minContributionInUSDCents );
       assert((await privateSale.openingTime()).toNumber() == startTime);
       assert((await privateSale.closingTime()).toNumber() == endTime);
-      assert((await privateSale.etherPriceInCents()).toNumber() == etherPriceInCents);
-      assert((await privateSale.binanceCoinPriceInCents()).toNumber() == binanceCoinPriceInCents);
       assert((await privateSale.token()) == ERC20);
       assert((await privateSale.binanceCoin()) == binanceCoin);
       assert((await privateSale.owner()) == accounts[0]);
@@ -46,14 +39,11 @@ contract('Private sale', function(accounts) {
     beforeEach(async () => {
       const openingTime = await latestTime() + 10;
       const endingTime = openingTime + duration.days(10);
-      const tokenPriceInCents = 10;
-      const etherPriceInCents = 30000;
-      const binanceCoinPriceInCents = 1100;
       const binanceCoin = accounts[1];
       const creditsToken = accounts[2];
       const minContributionInUSDCents  = 100;
       erc20 = await Token.new(accounts[0], ether(7000000));
-      privateSale = await PrivateSale.new(openingTime, endingTime, tokenPriceInCents, etherPriceInCents, binanceCoinPriceInCents, binanceCoin, creditsToken, erc20.address, minContributionInUSDCents );
+      privateSale = await PrivateSale.new(openingTime, endingTime, binanceCoin, creditsToken, erc20.address);
     })
 
     it('only admin can change the token price', async () => {
@@ -162,14 +152,24 @@ contract('Private sale', function(accounts) {
     });
 
     it('only admin can call initialize', async () => {
+      let etherPriceInCents = 100;
+      let creditsTokenPriceInCents = 101;
+      let tokenPriceInCents = 102;
+      let binanceCoinPriceInCents = 103;
+      let minContributionInUSDCents = 10000;
       await erc20.approve(privateSale.address, ether(700000))
-      await privateSale.initializePrivateSale(2000, {from: accounts[1]}).should.be.rejectedWith(EVMRevert);
-      await privateSale.initializePrivateSale(2000);
+
+      await privateSale.initializePrivateSale(etherPriceInCents, tokenPriceInCents, binanceCoinPriceInCents, creditsTokenPriceInCents, minContributionInUSDCents, {from: accounts[1]}).should.be.rejectedWith(EVMRevert);
+      await privateSale.initializePrivateSale(etherPriceInCents, tokenPriceInCents, binanceCoinPriceInCents, creditsTokenPriceInCents, minContributionInUSDCents);
       assert(await privateSale.initialized());
-      assert((await privateSale.creditsTokenPriceInCents()).toNumber() === 2000);
+      assert((await privateSale.creditsTokenPriceInCents()).toNumber() === creditsTokenPriceInCents);
+      assert((await privateSale.binanceCoinPriceInCents()).toNumber() === binanceCoinPriceInCents);
+      assert((await privateSale.etherPriceInCents()).toNumber() === etherPriceInCents);
+      assert((await privateSale.tokenPriceInCents()).toNumber() === tokenPriceInCents);
+      assert((await privateSale.minContributionInUSDCents()).toNumber() === minContributionInUSDCents);
       const totalSaleAllocation = await privateSale.totalSaleAllocation();
       totalSaleAllocation.should.be.bignumber.equal(ether(700000));
-      await privateSale.initializePrivateSale(2000)
+      await privateSale.initializePrivateSale(etherPriceInCents, tokenPriceInCents, binanceCoinPriceInCents, creditsTokenPriceInCents, minContributionInUSDCents)
       .should.be.rejectedWith(EVMRevert);
     });
 
@@ -196,14 +196,10 @@ contract('Private sale', function(accounts) {
     beforeEach(async () => {
       const openingTime = await latestTime() + 10;
       const endingTime = openingTime + duration.days(10);
-      const tokenPriceInCents = 10;
-      const etherPriceInCents = 30000;
-      const binanceCoinPriceInCents = 1100;
       const binanceCoin = accounts[1];
       const creditsToken = accounts[1];
-      const minContributionInUSDCents  = 100;
       erc20 = await Token.new(accounts[0], ether(7000000));
-      privateSale = await PrivateSale.new(openingTime, endingTime, tokenPriceInCents, etherPriceInCents, binanceCoinPriceInCents, binanceCoin, creditsToken, erc20.address, minContributionInUSDCents );
+      privateSale = await PrivateSale.new(openingTime, endingTime, binanceCoin, creditsToken, erc20.address);
     })
     it('should convert to USD', async () => {
       const tokenCost = [30000, 20000, 1100, 29340];
@@ -231,8 +227,9 @@ contract('Private sale', function(accounts) {
     });
 
     it('calculate token amount', async () => {
-      await privateSale.setEtherPrice(50000)
+      await privateSale.setEtherPrice(50000);
       let tokenPriceInCents = 10;
+      await privateSale.setTokenPrice(tokenPriceInCents);
       const ethPrices = [29850, 32000, 50000, 28904];
       const ethContribution = [1, 0.5, 2, 0.25];
       for(var i=0;i<ethPrices.length;i++) {
@@ -254,13 +251,14 @@ contract('Private sale', function(accounts) {
       const tokenPriceInCents = 10;
       const etherPriceInCents = 30000;
       const binanceCoinPriceInCents = 1100;
+      const creditsTokenPriceInCents = 1000;
       const binanceCoin = accounts[1];
       const creditsToken = accounts[2];
       const minContributionInUSDCents  = 1500000;
       erc20 = await Token.new(accounts[0], ether(2*526500));
-      privateSale = await PrivateSale.new(openingTime, endingTime, tokenPriceInCents, etherPriceInCents, binanceCoinPriceInCents, binanceCoin, creditsToken, erc20.address, minContributionInUSDCents );
+      privateSale = await PrivateSale.new(openingTime, endingTime, binanceCoin, creditsToken, erc20.address);
       await erc20.approve(privateSale.address, ether(2*526500));
-      await privateSale.initializePrivateSale(2000);
+      await privateSale.initializePrivateSale(etherPriceInCents, tokenPriceInCents, binanceCoinPriceInCents, creditsTokenPriceInCents, minContributionInUSDCents);
       await increaseTimeTo(openingTime + 10);
     });
 
@@ -324,13 +322,14 @@ contract('Private sale', function(accounts) {
       const tokenPriceInCents = 10;
       const etherPriceInCents = 3000000;
       const binanceCoinPriceInCents = 1100;
+      const creditsTokenPriceInCents = 1200;
       const binanceCoin = accounts[1];
       const creditsToken = accounts[2];
       const minContributionInUSDCents  = 15000;
       erc20 = await Token.new(accounts[0], ether(2*526500));
-      privateSale = await PrivateSale.new(openingTime, endingTime, tokenPriceInCents, etherPriceInCents, binanceCoinPriceInCents, binanceCoin, creditsToken, erc20.address, minContributionInUSDCents );
+      privateSale = await PrivateSale.new(openingTime, endingTime, binanceCoin, creditsToken, erc20.address);
       await erc20.approve(privateSale.address, ether(2*526500));
-      await privateSale.initializePrivateSale(2000);
+      await privateSale.initializePrivateSale(etherPriceInCents, tokenPriceInCents, binanceCoinPriceInCents, creditsTokenPriceInCents, minContributionInUSDCents);
       await increaseTimeTo(openingTime + 10);
       await privateSale.addWhitelist(accounts[1]);
       await privateSale.addWhitelist(accounts[5]);
@@ -375,7 +374,7 @@ contract('Private sale', function(accounts) {
     });
   });
 
-  describe('BNB token contribution', () => {
+  describe('BNB and Credits token contribution', () => {
     let privateSale;
     let erc20;
     let endingTime;
@@ -389,12 +388,13 @@ contract('Private sale', function(accounts) {
       const etherPriceInCents = 3000000;
       const binanceCoinPriceInCents = 1100;
       const minContributionInUSDCents  = 1100;
+      const creditsTokenPriceInCents = 1100;
       binanceCoin = await Token.new(accounts[1], ether(15000/11 + 9090.9090909091 + 250000/11))
       creditsToken = await Token.new(accounts[1], ether(15000/11 + 9090.9090909091 + 250000/11))
       erc20 = await Token.new(accounts[0], ether(7000000));
-      privateSale = await PrivateSale.new(openingTime, endingTime, tokenPriceInCents, etherPriceInCents, binanceCoinPriceInCents, binanceCoin.address, creditsToken.address, erc20.address, minContributionInUSDCents );
+      privateSale = await PrivateSale.new(openingTime, endingTime, binanceCoin.address, creditsToken.address, erc20.address);
       await erc20.approve(privateSale.address, ether(7000000));
-      await privateSale.initializePrivateSale(1100);
+      await privateSale.initializePrivateSale(etherPriceInCents, tokenPriceInCents, binanceCoinPriceInCents, creditsTokenPriceInCents, minContributionInUSDCents);
       await increaseTimeTo(openingTime + 10);
       await privateSale.addWhitelist(accounts[1]);
     });
@@ -463,17 +463,18 @@ contract('Private sale', function(accounts) {
     let erc20;
     let endingTime;
     let bonus;
+    const tokenPriceInCents = 10;
+    const etherPriceInCents = 3000000;
+    const binanceCoinPriceInCents = 1100;
+    const creditsTokenPriceInCents = 100;
+    const minContributionInUSDCents  = 15000;
     beforeEach(async () => {
       const openingTime = await latestTime() + 10;
       endingTime = openingTime + duration.days(10);
-      const tokenPriceInCents = 10;
-      const etherPriceInCents = 3000000;
-      const binanceCoinPriceInCents = 1100;
       const binanceCoin = accounts[1];
       const creditsToken = accounts[2];
-      const minContributionInUSDCents  = 15000;
       erc20 = await Token.new(accounts[0], ether(2*526500));
-      privateSale = await PrivateSale.new(openingTime, endingTime, tokenPriceInCents, etherPriceInCents, binanceCoinPriceInCents, binanceCoin, creditsToken, erc20.address, minContributionInUSDCents );
+      privateSale = await PrivateSale.new(openingTime, endingTime, binanceCoin, creditsToken, erc20.address);
       await increaseTimeTo(openingTime + 10);
       await privateSale.addWhitelist(accounts[1]);
     });
@@ -485,7 +486,7 @@ contract('Private sale', function(accounts) {
 
     it('hasClosed should return true when max Tokens have been sold', async () => {
       await erc20.approve(privateSale.address, ether(150000* 1.35));
-      await privateSale.initializePrivateSale(2000);
+      await privateSale.initializePrivateSale(etherPriceInCents, tokenPriceInCents, binanceCoinPriceInCents, creditsTokenPriceInCents, minContributionInUSDCents);
       let bonus = await privateSale.calculateBonus(ether(150000), 3000000);
       await privateSale.sendTransaction({ value: ether(0.5) , from: accounts[1] });
       let balance = await erc20.balanceOf(accounts[1]);
@@ -503,7 +504,7 @@ contract('Private sale', function(accounts) {
 
     it('finalize crowdsale can be called only after the hasClosed has returned true', async () => {
       await erc20.approve(privateSale.address, ether(150000* 1.35));
-      await privateSale.initializePrivateSale(2000);
+      await privateSale.initializePrivateSale(etherPriceInCents, tokenPriceInCents, binanceCoinPriceInCents, creditsTokenPriceInCents, minContributionInUSDCents);
       await privateSale.sendTransaction({ value: ether(0.5), from: accounts[1] });
       await increaseTimeTo(endingTime + 10);
       assert(await privateSale.hasClosed());
@@ -517,14 +518,14 @@ contract('Private sale', function(accounts) {
 
     it('finalize crowdsale cannot be called by non-admin', async () => {
       await erc20.approve(privateSale.address, ether(150000* 1.35));
-      await privateSale.initializePrivateSale(2000);
+      await privateSale.initializePrivateSale(etherPriceInCents, tokenPriceInCents, binanceCoinPriceInCents, creditsTokenPriceInCents, minContributionInUSDCents);
       await increaseTimeTo(endingTime + 10);
       await privateSale.finalizeCrowdsale( { from: accounts[3] }).should.be.rejectedWith(EVMRevert);
     });
 
     it('finalize crowdsale cannot be called twice', async () => {
       await erc20.approve(privateSale.address, ether(150000* 1.35));
-      await privateSale.initializePrivateSale(2000);
+      await privateSale.initializePrivateSale(etherPriceInCents, tokenPriceInCents, binanceCoinPriceInCents, creditsTokenPriceInCents, minContributionInUSDCents);
       await increaseTimeTo(endingTime + 10);
       await privateSale.finalizeCrowdsale();
       await privateSale.finalizeCrowdsale().should.be.rejectedWith(EVMRevert);
