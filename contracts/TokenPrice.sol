@@ -24,12 +24,6 @@ contract TokenPrice is CustomPausable {
 
   event TokenPriceChanged(uint256 _newPrice, uint256 _oldPrice);
 
-  constructor(uint256 _cents) internal {
-    require(_cents > 0);
-    tokenPriceInCents  = _cents;
-  }
-
-
   function setTokenPrice(uint256 _cents) public onlyAdmin whenNotPaused {
     require(_cents > 0);
 

@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
  */
- 
+
  pragma solidity 0.4.24;
 import "./CustomPausable.sol";
 
@@ -23,10 +23,6 @@ contract BinanceCoinPrice is CustomPausable {
 
   event BinanceCoinPriceChanged(uint256 _newPrice, uint256 _oldPrice);
 
-  constructor(uint256 _cents) internal {
-    binanceCoinPriceInCents = _cents;
-    emit BinanceCoinPriceChanged(0, _cents);
-  }
 
   function setBinanceCoinPrice(uint256 _cents) public whenNotPaused onlyAdmin {
     require(_cents > 0);

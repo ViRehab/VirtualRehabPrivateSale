@@ -23,12 +23,6 @@ contract CreditsTokenPrice is CustomPausable {
 
   event CreditsTokenPriceChanged(uint256 _newPrice, uint256 _oldPrice);
 
-  constructor(uint256 _cents) internal {
-    require(_cents > 0);
-
-    creditsTokenPriceInCents = _cents;
-    emit CreditsTokenPriceChanged(0, _cents);
-  }
 
   function setCreditsTokenPrice(uint256 _cents) public whenNotPaused onlyAdmin {
     require(_cents > 0);

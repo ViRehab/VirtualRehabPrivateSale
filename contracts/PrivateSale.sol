@@ -73,10 +73,6 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
   constructor(uint256 _startTime, uint256 _endTime, ERC20 _binanceCoin, ERC20 _creditsToken, ERC20 _vrhToken) public
   TimedCrowdsale(_startTime, _endTime)
   Crowdsale(1, msg.sender, _vrhToken)
-  TokenPrice(1)
-  EtherPrice(1)
-  BinanceCoinPrice(1)
-  CreditsTokenPrice(1)
   BonusHolder(_vrhToken) {
     //require(address(_binanceCoin) == 0xB8c77482e45F1F44dE1745F52C74426C631bDD52);
     creditsToken = _creditsToken;
