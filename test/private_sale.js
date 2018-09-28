@@ -206,7 +206,7 @@ contract('Private sale', function(accounts) {
       const amount = [ether(1), ether(2), ether(3), ether(0.5432)];
       const expectedUSD = [30000, 40000, 3300, Math.round(29340*0.5432)];
       for(let i=0;i<tokenCost.length;i++) {
-        let USD = await privateSale.convertToCents(amount[i], tokenCost[i]);
+        let USD = await privateSale.convertToCents(amount[i], tokenCost[i], 18);
         assert(USD.toNumber() == expectedUSD[i]);
       }
     });
@@ -388,9 +388,9 @@ contract('Private sale', function(accounts) {
       const etherPriceInCents = 3000000;
       const binanceCoinPriceInCents = 1100;
       const minContributionInUSDCents  = 1100;
-      const creditsTokenPriceInCents = 1100;
+      const creditsTokenPriceInCents = 1200;
       binanceCoin = await Token.new(accounts[1], ether(15000/11 + 9090.9090909091 + 250000/11))
-      creditsToken = await Token.new(accounts[1], ether(15000/11 + 9090.9090909091 + 250000/11))
+      creditsToken = await Token.new(accounts[1], '0x' + BigNumber(10).pow(18).multipliedBy(1400 + 10000 + 22728).toString(16));
       erc20 = await Token.new(accounts[0], ether(7000000));
       privateSale = await PrivateSale.new(openingTime, endingTime, binanceCoin.address, creditsToken.address, erc20.address);
       await erc20.approve(privateSale.address, ether(7000000));
@@ -413,16 +413,17 @@ contract('Private sale', function(accounts) {
     });
 
     it('should accept Credits Token', async () => {
-      await creditsToken.approve(privateSale.address, ether(15000/11), { from: accounts[1] });
+
+      await creditsToken.approve(privateSale.address, '0x' + BigNumber(10).pow(6).multipliedBy(15000).toString(16), { from: accounts[1] });
       await privateSale.contributeInCreditsToken({ from: accounts[1] });
       let balance = await erc20.balanceOf(accounts[1]);
-      balance.should.be.bignumber.equal(ether(150000));
+      balance.should.be.bignumber.equal(ether(15000*12/0.10));
       let totalTokensSold = await privateSale.totalTokensSold();
-      let bonus = ether(150000 * 0.35);
+      let bonus = ether(0.40 * 15000*12/0.10);
       let bonusAssigned = await privateSale.bonusHolders(accounts[1]);
       totalTokensSold.should.be.bignumber.equal(bonus.add(balance));
       let creditsTokenBalance = await creditsToken.balanceOf(privateSale.address);
-      creditsTokenBalance.should.be.bignumber.equal(ether(15000/11));
+      assert(creditsTokenBalance.toString(16) == BigNumber(10).pow(6).multipliedBy(15000).toString(16));
     });
 
     it('different bonus', async () => {
