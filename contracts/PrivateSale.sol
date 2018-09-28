@@ -37,7 +37,7 @@ import "./BonusHolder.sol";
 ///from China, Republic of Korea, and New Zealand. Any questions or additional information needed
 ///can be sought by sending an e-mail to investors＠virtualrehab.co.
 ///
-///Accepted Currencies: Ether, Binance Coin.
+///Accepted Currencies: Ether, Binance Coin, Credits Token.
 contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPrice, BonusHolder, FinalizableCrowdsale, CustomWhitelist {
   ///@notice The ERC20 token contract of Binance Coin. Must be: 0xB8c77482e45F1F44dE1745F52C74426C631bDD52
   ERC20 public binanceCoin;
