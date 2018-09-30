@@ -25,18 +25,18 @@ import "./BonusHolder.sol";
 ///@title Virtual Rehab Private Sale.
 ///@author Binod Nirvan, Subramanian Venkatesan (http://virtualrehab.co)
 ///@notice This contract enables contributors to participate in Virtual Rehab Private Sale.
-///
+/// 
 ///The Virtual Rehab Private Sale provides early investors with an opportunity
 ///to take part into the Virtual Rehab token sale ahead of the pre-sale and main sale launch.
 ///All early investors are expected to successfully complete KYC and whitelisting
 ///to contribute to the Virtual Rehab token sale.
-///
+/// 
 ///US investors must be accredited investors and must provide all requested documentation
 ///to validate their accreditation. We, unfortunately, do not accept contributions
 ///from non-accredited investors within the US along with any contribution
 ///from China, Republic of Korea, and New Zealand. Any questions or additional information needed
 ///can be sought by sending an e-mail to investors＠virtualrehab.co.
-///
+/// 
 ///Accepted Currencies: Ether, Binance Coin, Credits Token.
 contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPrice, BonusHolder, FinalizableCrowdsale, CustomWhitelist {
   ///@notice The ERC20 token contract of Binance Coin. Must be: 0xB8c77482e45F1F44dE1745F52C74426C631bDD52
@@ -89,6 +89,9 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
     require(!initialized);
     require(_etherPriceInCents > 0);
     require(_tokenPriceInCents > 0);
+    require(_binanceCoinPriceInCents > 0);
+    require(_creditsTokenPriceInCents > 0);
+    require(_minContributionInUSDCents > 0);
 
     setEtherPrice(_etherPriceInCents);
     setTokenPrice(_tokenPriceInCents);
@@ -211,7 +214,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
     super._processPurchase(_beneficiary, _tokenAmount);
   }
 
-  ///@dev Todo: the accuracy of this function needs to be rechecked.
+  ///@notice Calculates bonus.
   ///@param _tokenAmount The total amount in VRH tokens.
   ///@param _cents The amount in US dollar cents.
   function calculateBonus(uint256 _tokenAmount, uint256 _cents) public pure returns (uint256) {

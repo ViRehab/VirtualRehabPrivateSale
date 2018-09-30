@@ -5,19 +5,19 @@
 **PrivateSale**
 
 This contract enables contributors to participate in Virtual Rehab Private Sale.
-
-///The Virtual Rehab Private Sale provides early investors with an opportunity
+ 
+The Virtual Rehab Private Sale provides early investors with an opportunity
 to take part into the Virtual Rehab token sale ahead of the pre-sale and main sale launch.
 All early investors are expected to successfully complete KYC and whitelisting
 to contribute to the Virtual Rehab token sale.
-
-///US investors must be accredited investors and must provide all requested documentation
+ 
+US investors must be accredited investors and must provide all requested documentation
 to validate their accreditation. We, unfortunately, do not accept contributions
 from non-accredited investors within the US along with any contribution
 from China, Republic of Korea, and New Zealand. Any questions or additional information needed
 can be sought by sending an e-mail to investors＠virtualrehab.co.
-
-///Accepted Currencies: Ether, Binance Coin, Credits Token.
+ 
+Accepted Currencies: Ether, Binance Coin, Credits Token.
 
 ## Constructor
 
@@ -162,7 +162,7 @@ function _processPurchase(address _beneficiary, uint256 _tokenAmount) internal
 
 ### calculateBonus
 
-Todo: the accuracy of this function needs to be rechecked.
+Calculates bonus.
 
 ```js
 function calculateBonus(uint256 _tokenAmount, uint256 _cents) public pure
