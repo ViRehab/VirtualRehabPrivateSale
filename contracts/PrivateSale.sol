@@ -55,8 +55,8 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
   uint256 public minContributionInUSDCents;
 
   mapping(address => uint256) public bonusPercentages;
-  uint[5] public bonusLimits;
-  uint[5] public percentages;
+  uint[3] public bonusLimits;
+  uint[3] public percentages;
 
   ///@notice Signifies if the private sale was started.
   bool public initialized;
@@ -245,7 +245,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
   // bonus Limits must be in decreasing order
   function setBonuses(uint[] _bonusLimits, uint[] _percentages) public onlyAdmin {
     require(_bonusLimits.length == _percentages.length);
-    require(_percentages.length == 5);
+    require(_percentages.length == 3);
     for(uint8 i=0;i<_bonusLimits.length;i++) {
       bonusLimits[i] = _bonusLimits[i];
       percentages[i] = _percentages[i];
