@@ -212,17 +212,11 @@ contract('Private sale', function(accounts) {
     });
 
     it('calculateBonus for token amount', async () => {
-      const usd = [1000 * 100, 16000 * 100, 200000 * 100, 260000 * 100 ]
-      const tokenAmount = [100, 200, 300, 400];
-      const expectedBonus = [
-        0,
-        200*35/100,
-        300 * 40/100,
-        400 * 50/100
-      ]
+      const bonusPercentage = [35,45,50]
+      const tokenAmount = [100, 200, 350];
       for(let i=0;i<tokenAmount.length; i++) {
-        let bonus = await privateSale.calculateBonus(ether(tokenAmount[i]), usd[i]);
-        bonus.should.be.bignumber.equal(ether(expectedBonus[i]));
+        let bonus = await privateSale.calculateBonus(tokenAmount[i], bonusPercentage[i]);
+        assert(bonus.toNumber() == tokenAmount[i] * bonusPercentage[i] / 100);
       }
     });
 
@@ -391,7 +385,7 @@ contract('Private sale', function(accounts) {
       const creditsTokenPriceInCents = 1200;
       binanceCoin = await Token.new(accounts[1], ether(15000/11 + 9090.9090909091 + 250000/11))
       creditsToken = await Token.new(accounts[1], '0x' + BigNumber(10).pow(18).multipliedBy(1400 + 10000 + 22728).toString(16));
-      erc20 = await Token.new(accounts[0], ether(7000000));
+      erc20 = await Token.new(accounts[0], ether(17000000));
       privateSale = await PrivateSale.new(openingTime, endingTime, binanceCoin.address, creditsToken.address, erc20.address);
       await erc20.approve(privateSale.address, ether(7000000));
       await privateSale.initializePrivateSale(etherPriceInCents, tokenPriceInCents, binanceCoinPriceInCents, creditsTokenPriceInCents, minContributionInUSDCents);
@@ -441,6 +435,7 @@ contract('Private sale', function(accounts) {
         let bonus = await privateSale.bonusHolders(_accounts[i]);
         bonus.should.be.bignumber.equal(bonuses[i]);
       }
+
     })
 
     it('should not accept from non whitelisted', async () => {
@@ -456,7 +451,19 @@ contract('Private sale', function(accounts) {
       await binanceCoin.approve(privateSale.address, ether(3000));
       await privateSale.contributeInBNB({ from: accounts[1] }).should.be.rejectedWith(EVMRevert);
     });
+    it('accept eth', async () => {
+      await privateSale.setEtherPrice(1500000);
+      await privateSale.sendTransaction({ value: ether(1), from: accounts[1] })
+      let Balance = await erc20.balanceOf(accounts[1]);
+      let Bonus = await privateSale.bonusHolders(accounts[1]);
 
+      await privateSale.sendTransaction({ value: ether(0.25), from: accounts[1] })
+      let bonusPercentage = await privateSale.bonusPercentages(accounts[1]);
+      let additionalBonus = ether(0.25*150000*0.35)
+      let b = await privateSale.bonusHolders(accounts[1]);
+      Bonus.add(additionalBonus).should.be.bignumber.equal(b);
+
+    });
   });
 
   describe('Finalization', () => {
