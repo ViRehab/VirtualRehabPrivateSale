@@ -187,6 +187,19 @@ contract('Private sale', function(accounts) {
       await privateSale.changeClosingTime(endTime, {from: accounts[2]})
       .should.be.rejectedWith(EVMRevert);
     });
+
+    it('only admins can set bonuses', async () => {
+      let bonuses = [34000, 32000, 20000, 12000, 8000];
+      let percentages = [3,4,5,6,7];
+      await privateSale.setBonuses(bonuses, percentages);
+
+      for(let i=0;i<bonuses.length;i++) {
+        assert((await privateSale.bonusLimits(i)).toNumber(), bonuses[i]);
+        assert((await privateSale.percentages(i)).toNumber(), percentages[i]);
+      }
+
+      await privateSale.setBonuses(bonuses, percentages, {from: accounts[1]}).should.be.rejectedWith(EVMRevert);
+    });
   })
 
   describe('constant conversion function', () => {

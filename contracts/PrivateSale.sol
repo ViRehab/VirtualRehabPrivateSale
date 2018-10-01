@@ -55,6 +55,8 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
   uint256 public minContributionInUSDCents;
 
   mapping(address => uint256) public bonusPercentages;
+  uint[5] public bonusLimits;
+  uint[5] public percentages;
 
   ///@notice Signifies if the private sale was started.
   bool public initialized;
@@ -104,6 +106,15 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
     increaseTokenSaleAllocation();
 
     initialized = true;
+    bonusLimits[0] = 25000000;
+    bonusLimits[1] = 10000000;
+    bonusLimits[2] = 1500000;
+
+    percentages[0] = 50;
+    percentages[1] = 40;
+    percentages[2] = 35;
+
+
     emit SaleInitialized();
   }
 
@@ -231,15 +242,21 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
     return _tokenAmount.mul(_percentage).div(100);
   }
 
-  function getBonusPercentage(uint _cents) pure public returns(uint256) {
-    if(_cents >= 25000000) {
-      return 50;
-    } else if(_cents >= 10000000) {
-      return 40;
-    } else if(_cents >=1500000){
-      return 35;
-    } else {
-      return 0;
+  // bonus Limits must be in decreasing order
+  function setBonuses(uint[] _bonusLimits, uint[] _percentages) public onlyAdmin {
+    require(_bonusLimits.length == _percentages.length);
+    require(_percentages.length == 5);
+    for(uint8 i=0;i<_bonusLimits.length;i++) {
+      bonusLimits[i] = _bonusLimits[i];
+      percentages[i] = _percentages[i];
+    }
+  }
+  function getBonusPercentage(uint _cents) view public returns(uint256) {
+
+    for(uint8 i=0;i<bonusLimits.length;i++) {
+      if(_cents >= bonusLimits[i]) {
+        return percentages[i];
+      }
     }
   }
 
