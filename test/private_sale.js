@@ -211,8 +211,14 @@ contract('Private sale', function(accounts) {
       const endingTime = openingTime + duration.days(10);
       const binanceCoin = accounts[1];
       const creditsToken = accounts[1];
+      const tokenPriceInCents = 10;
+      const etherPriceInCents = 30000;
+      const binanceCoinPriceInCents = 1100;
+      const creditsTokenPriceInCents = 1000;
+      const minContributionInUSDCents  = 1500000;
       erc20 = await Token.new(accounts[0], ether(7000000));
       privateSale = await PrivateSale.new(openingTime, endingTime, binanceCoin, creditsToken, erc20.address);
+      await privateSale.initializePrivateSale(etherPriceInCents, tokenPriceInCents, binanceCoinPriceInCents, creditsTokenPriceInCents, minContributionInUSDCents);
     })
     it('should convert to USD', async () => {
       const tokenCost = [30000, 20000, 1100, 29340];
@@ -245,6 +251,15 @@ contract('Private sale', function(accounts) {
         (await privateSale.getTokenAmountForWei(ether(ethContribution[i])))
         .should.be.bignumber.equal(expectedTokenAmount);
       }
+    })
+
+    it('return bonus percentages', async () => {
+      let cents = [100, 1400000, 2500000, 10000000, 25000000, 26000000];
+      let percentages = [0,0,35,40,50, 50];
+      for(let i=0;i<cents.length;i++) {
+        assert((await privateSale.getBonusPercentage(cents[i])).toNumber() == percentages[i]);
+      }
+
     })
   });
 
