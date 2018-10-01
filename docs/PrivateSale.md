@@ -17,7 +17,7 @@ from non-accredited investors within the US along with any contribution
 from China, Republic of Korea, and New Zealand. Any questions or additional information needed
 can be sought by sending an e-mail to investors＠virtualrehab.co.
  
-Accepted Currencies: Ether, Binance Coin.
+Accepted Currencies: Ether, Binance Coin, Credits Token.
 
 ## Constructor
 
@@ -162,7 +162,7 @@ function _processPurchase(address _beneficiary, uint256 _tokenAmount) internal
 
 ### calculateBonus
 
-Todo: the accuracy of this function needs to be rechecked.
+Calculates bonus.
 
 ```js
 function calculateBonus(uint256 _tokenAmount, uint256 _cents) public pure
@@ -182,7 +182,7 @@ Converts the amount of Ether (wei) or amount of any token having 18 decimal plac
 to cent value based on the cent price supplied.
 
 ```js
-function convertToCents(uint256 _weiAmount, uint256 _priceInCents) public pure
+function convertToCents(uint256 _tokenAmount, uint256 _priceInCents, uint256 _decimals) public pure
 returns(uint256)
 ```
 
@@ -190,8 +190,9 @@ returns(uint256)
 
 | Name        | Type           | Description  |
 | ------------- |------------- | -----|
-| _weiAmount | uint256 |  | 
+| _tokenAmount | uint256 |  | 
 | _priceInCents | uint256 |  | 
+| _decimals | uint256 |  | 
 
 ### _getTokenAmount
 
