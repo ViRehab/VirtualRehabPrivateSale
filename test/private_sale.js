@@ -189,8 +189,8 @@ contract('Private sale', function(accounts) {
     });
 
     it('only admins can set bonuses', async () => {
-      let bonuses = [34000, 32000, 20000, 12000, 8000];
-      let percentages = [3,4,5,6,7];
+      let bonuses = [34000, 32000, 20000];
+      let percentages = [3,4,5];
       await privateSale.setBonuses(bonuses, percentages);
 
       for(let i=0;i<bonuses.length;i++) {
