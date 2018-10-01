@@ -119,8 +119,8 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
 
 
     if(bonusPercentages[msg.sender] == 0) {
-      require(amountInUSDCents >= minContributionInUSDCents);
-      bonusPercentages[msg.sender] = getBonusPercentage(amountInUSDCents);
+      require(contributionCents >= minContributionInUSDCents);
+      bonusPercentages[msg.sender] = getBonusPercentage(contributionCents);
     }
 
     ///Calculate the amount of tokens per the contribution.
@@ -153,8 +153,8 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
     uint256 contributionCents = convertToCents(allowance, creditsTokenPriceInCents, 6);
 
     if(bonusPercentages[msg.sender] == 0) {
-      require(amountInUSDCents >= minContributionInUSDCents);
-      bonusPercentages[msg.sender] = getBonusPercentage(amountInUSDCents);
+      require(contributionCents >= minContributionInUSDCents);
+      bonusPercentages[msg.sender] = getBonusPercentage(contributionCents);
     }
 
     ///Calculate the amount of tokens per the contribution.
