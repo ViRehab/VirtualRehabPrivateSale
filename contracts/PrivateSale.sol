@@ -54,6 +54,8 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
   ///@notice The minimum contribution in dollar cent value.
   uint256 public minContributionInUSDCents;
 
+  mapping(address => uint256) public bonusPercentages;
+
   ///@notice Signifies if the private sale was started.
   bool public initialized;
 
@@ -112,14 +114,17 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
     ///Calculate equivalent amount in dollar cent value.
     uint256 contributionCents  = convertToCents(allowance, binanceCoinPriceInCents, 18);
 
-    ///Check if the contribution can be accepted.
-    require(contributionCents  >= minContributionInUSDCents);
+
+    if(bonusPercentages[msg.sender] == 0) {
+      require(amountInUSDCents >= minContributionInUSDCents);
+      bonusPercentages[msg.sender] = getBonusPercentage(amountInUSDCents);
+    }
 
     ///Calculate the amount of tokens per the contribution.
     uint256 numTokens = contributionCents.mul(1 ether).div(tokenPriceInCents);
 
     ///Calculate the bonus based on the number of tokens and the dollar cent value.
-    uint256 bonus = calculateBonus(numTokens, contributionCents);
+    uint256 bonus = calculateBonus(numTokens, bonusPercentages[msg.sender]);
 
     require(totalTokensSold.add(numTokens).add(bonus) <= totalSaleAllocation);
 
@@ -144,14 +149,16 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
     ///Calculate equivalent amount in dollar cent value.
     uint256 contributionCents = convertToCents(allowance, creditsTokenPriceInCents, 6);
 
-    ///Check if the contribution can be accepted.
-    require(contributionCents >= minContributionInUSDCents);
+    if(bonusPercentages[msg.sender] == 0) {
+      require(amountInUSDCents >= minContributionInUSDCents);
+      bonusPercentages[msg.sender] = getBonusPercentage(amountInUSDCents);
+    }
 
     ///Calculate the amount of tokens per the contribution.
     uint256 numTokens = contributionCents.mul(1 ether).div(tokenPriceInCents);
 
     ///Calculate the bonus based on the number of tokens and the dollar cent value.
-    uint256 bonus = calculateBonus(numTokens, contributionCents);
+    uint256 bonus = calculateBonus(numTokens, bonusPercentages[msg.sender]);
 
     require(totalTokensSold.add(numTokens).add(bonus) <= totalSaleAllocation);
 
@@ -184,7 +191,10 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
     require(initialized);
 
     amountInUSDCents = convertToCents(_weiAmount, etherPriceInCents, 18);
-    require(amountInUSDCents >= minContributionInUSDCents);
+    if(bonusPercentages[_beneficiary] == 0) {
+      require(amountInUSDCents >= minContributionInUSDCents);
+      bonusPercentages[_beneficiary] = getBonusPercentage(amountInUSDCents);
+    }
 
     ///Continue validating the purchase.
     super._preValidatePurchase(_beneficiary, _weiAmount);
@@ -196,7 +206,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
   ///@param _tokenAmount The amount of tokens wished to purchase.
   function _processPurchase(address _beneficiary, uint256 _tokenAmount) internal {
     ///amountInUSDCents is set on _preValidatePurchase
-    uint256 bonus = calculateBonus(_tokenAmount, amountInUSDCents);
+    uint256 bonus = calculateBonus(_tokenAmount, bonusPercentages[_beneficiary]);
 
     ///Ensure that the sale does not exceed allocation.
     require(totalTokensSold.add(_tokenAmount).add(bonus) <= totalSaleAllocation);
@@ -213,14 +223,18 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
 
   ///@dev Todo: the accuracy of this function needs to be rechecked.
   ///@param _tokenAmount The total amount in VRH tokens.
-  ///@param _cents The amount in US dollar cents.
-  function calculateBonus(uint256 _tokenAmount, uint256 _cents) public pure returns (uint256) {
+  ///@param _percentage bonus percentage.
+  function calculateBonus(uint256 _tokenAmount, uint256 _percentage) public pure returns (uint256) {
+    return _tokenAmount.mul(_percentage).div(100);
+  }
+
+  function getBonusPercentage(uint _cents) pure public returns(uint256) {
     if(_cents >= 25000000) {
-      return _tokenAmount.mul(50).div(100);
+      return 50;
     } else if(_cents >= 10000000) {
-      return _tokenAmount.mul(40).div(100);
+      return 40;
     } else if(_cents >=1500000){
-      return _tokenAmount.mul(35).div(100);
+      return 35;
     } else {
       return 0;
     }
