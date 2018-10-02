@@ -91,7 +91,8 @@ contract BonusHolder is CustomPausable {
     emit BonusWithdrawn(msg.sender, amount);
   }
 
-  function bonusRemaining() public view returns(uint256) {
+  ///@notice Returns the remaining bonus held on behalf of the crowdsale contributors by this contract.
+  function getRemainingBonus() public view returns(uint256) {
     return bonusProvided.sub(bonusWithdrawn);
   }
 }

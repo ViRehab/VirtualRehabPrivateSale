@@ -28,7 +28,7 @@ event BonusWithdrawn(address indexed _address, uint256 _amount);
 - [setReleaseDate](#setreleasedate)
 - [assignBonus](#assignbonus)
 - [withdrawBonus](#withdrawbonus)
-- [bonusRemaining](#bonusremaining)
+- [getRemainingBonus](#getremainingbonus)
 
 ### setReleaseDate
 
@@ -69,10 +69,12 @@ The bonus can only be withdrawn after the release date.
 function withdrawBonus() external whenNotPaused
 ```
 
-### bonusRemaining
+### getRemainingBonus
+
+Returns the remaining bonus held on behalf of the crowdsale contributors by this contract.
 
 ```js
-function bonusRemaining() public view
+function getRemainingBonus() public view
 returns(uint256)
 ```
 

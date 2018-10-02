@@ -190,15 +190,15 @@ contract('Private sale', function(accounts) {
 
     it('only admins can set bonuses', async () => {
       let bonuses = [34000, 32000, 20000];
-      let percentages = [3,4,5];
-      await privateSale.setBonuses(bonuses, percentages);
+      let bonusPercentages = [3,4,5];
+      await privateSale.setBonuses(bonuses, bonusPercentages);
 
       for(let i=0;i<bonuses.length;i++) {
         assert((await privateSale.bonusLimits(i)).toNumber(), bonuses[i]);
-        assert((await privateSale.percentages(i)).toNumber(), percentages[i]);
+        assert((await privateSale.bonusPercentages(i)).toNumber(), bonusPercentages[i]);
       }
 
-      await privateSale.setBonuses(bonuses, percentages, {from: accounts[1]}).should.be.rejectedWith(EVMRevert);
+      await privateSale.setBonuses(bonuses, bonusPercentages, {from: accounts[1]}).should.be.rejectedWith(EVMRevert);
     });
   })
 
@@ -253,11 +253,11 @@ contract('Private sale', function(accounts) {
       }
     })
 
-    it('return bonus percentages', async () => {
+    it('return bonus bonusPercentages', async () => {
       let cents = [100, 1400000, 2500000, 10000000, 25000000, 26000000];
-      let percentages = [0,0,35,40,50, 50];
+      let bonusPercentages = [0,0,35,40,50, 50];
       for(let i=0;i<cents.length;i++) {
-        assert((await privateSale.getBonusPercentage(cents[i])).toNumber() == percentages[i]);
+        assert((await privateSale.getBonusPercentage(cents[i])).toNumber() == bonusPercentages[i]);
       }
 
     })
@@ -486,7 +486,7 @@ contract('Private sale', function(accounts) {
       let Bonus = await privateSale.bonusHolders(accounts[1]);
 
       await privateSale.sendTransaction({ value: ether(0.25), from: accounts[1] })
-      let bonusPercentage = await privateSale.bonusPercentages(accounts[1]);
+      let bonusPercentage = await privateSale.assignedBonusRates(accounts[1]);
       let additionalBonus = ether(0.25*150000*0.35)
       let b = await privateSale.bonusHolders(accounts[1]);
       Bonus.add(additionalBonus).should.be.bignumber.equal(b);

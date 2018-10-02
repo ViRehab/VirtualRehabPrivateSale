@@ -658,8 +658,8 @@ contract CustomAdmin is Ownable {
 
 ///@title This contract enables you to create pausable mechanism to stop in case of emergency.
 contract CustomPausable is CustomAdmin {
-  event Pause();
-  event Unpause();
+  event Paused();
+  event Unpaused();
 
   bool public paused = false;
 
@@ -678,13 +678,13 @@ contract CustomPausable is CustomAdmin {
   ///@notice Pauses the contract.
   function pause() external onlyAdmin whenNotPaused {
     paused = true;
-    emit Pause();
+    emit Paused();
   }
 
   ///@notice Unpauses the contract and returns to normal state.
   function unpause() external onlyAdmin whenPaused {
     paused = false;
-    emit Unpause();
+    emit Unpaused();
   }
 }
 
@@ -976,7 +976,8 @@ contract BonusHolder is CustomPausable {
     emit BonusWithdrawn(msg.sender, amount);
   }
 
-  function bonusRemaining() public view returns(uint256) {
+  ///@notice Returns the remaining bonus held on behalf of the crowdsale contributors by this contract.
+  function getRemainingBonus() public view returns(uint256) {
     return bonusProvided.sub(bonusWithdrawn);
   }
 }
@@ -1015,12 +1016,17 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
   ///@notice The minimum contribution in dollar cent value.
   uint256 public minContributionInUSDCents;
 
+  mapping(address => uint256) public assignedBonusRates;
+  uint[3] public bonusLimits;
+  uint[3] public bonusPercentages;
+
   ///@notice Signifies if the private sale was started.
   bool public initialized;
 
-  event MinimumContributionChanged(uint256 _newContribution, uint256 _oldContribution);
   event SaleInitialized();
 
+  event MinimumContributionChanged(uint256 _newContribution, uint256 _oldContribution);
+  event ClosingTimeChanged(uint256 _newClosingTime, uint256 _oldClosingTime);
   event FundsWithdrawn(address indexed _wallet, uint256 _amount);
   event ERC20Withdrawn(address indexed _contract, uint256 _amount);
   event TokensAllocatedForSale(uint256 _newAllowance, uint256 _oldAllowance);
@@ -1036,8 +1042,9 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
   Crowdsale(1, msg.sender, _vrhToken)
   BonusHolder(_vrhToken) {
     //require(address(_binanceCoin) == 0xB8c77482e45F1F44dE1745F52C74426C631bDD52);
-    creditsToken = _creditsToken;
+    //require(address(_creditsToken) == 0x46b9Ad944d1059450Da1163511069C718F699D31);
     binanceCoin = _binanceCoin;
+    creditsToken = _creditsToken;
   }
 
   ///@notice Initializes the private sale.
@@ -1062,7 +1069,17 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
 
     increaseTokenSaleAllocation();
 
+    bonusLimits[0] = 25000000;
+    bonusLimits[1] = 10000000;
+    bonusLimits[2] = 1500000;
+
+    bonusPercentages[0] = 50;
+    bonusPercentages[1] = 40;
+    bonusPercentages[2] = 35;
+
+
     initialized = true;
+
     emit SaleInitialized();
   }
 
@@ -1072,18 +1089,22 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
 
     ///Check the amount of Binance coins allowed to (be transferred by) this contract by the contributor.
     uint256 allowance = binanceCoin.allowance(msg.sender, this);
+    require (allowance > 0, "You have not approved any Binance Coin for this contract to receive.");
 
     ///Calculate equivalent amount in dollar cent value.
     uint256 contributionCents  = convertToCents(allowance, binanceCoinPriceInCents, 18);
 
-    ///Check if the contribution can be accepted.
-    require(contributionCents  >= minContributionInUSDCents);
+
+    if(assignedBonusRates[msg.sender] == 0) {
+      require(contributionCents >= minContributionInUSDCents);
+      assignedBonusRates[msg.sender] = getBonusPercentage(contributionCents);
+    }
 
     ///Calculate the amount of tokens per the contribution.
     uint256 numTokens = contributionCents.mul(1 ether).div(tokenPriceInCents);
 
     ///Calculate the bonus based on the number of tokens and the dollar cent value.
-    uint256 bonus = calculateBonus(numTokens, contributionCents);
+    uint256 bonus = calculateBonus(numTokens, assignedBonusRates[msg.sender]);
 
     require(totalTokensSold.add(numTokens).add(bonus) <= totalSaleAllocation);
 
@@ -1104,18 +1125,21 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
 
     ///Check the amount of Binance coins allowed to (be transferred by) this contract by the contributor.
     uint256 allowance = creditsToken.allowance(msg.sender, this);
+    require (allowance > 0, "You have not approved any Credits Token for this contract to receive.");
 
     ///Calculate equivalent amount in dollar cent value.
     uint256 contributionCents = convertToCents(allowance, creditsTokenPriceInCents, 6);
 
-    ///Check if the contribution can be accepted.
-    require(contributionCents >= minContributionInUSDCents);
+    if(assignedBonusRates[msg.sender] == 0) {
+      require(contributionCents >= minContributionInUSDCents);
+      assignedBonusRates[msg.sender] = getBonusPercentage(contributionCents);
+    }
 
     ///Calculate the amount of tokens per the contribution.
     uint256 numTokens = contributionCents.mul(1 ether).div(tokenPriceInCents);
 
     ///Calculate the bonus based on the number of tokens and the dollar cent value.
-    uint256 bonus = calculateBonus(numTokens, contributionCents);
+    uint256 bonus = calculateBonus(numTokens, assignedBonusRates[msg.sender]);
 
     require(totalTokensSold.add(numTokens).add(bonus) <= totalSaleAllocation);
 
@@ -1148,7 +1172,11 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
     require(initialized);
 
     amountInUSDCents = convertToCents(_weiAmount, etherPriceInCents, 18);
-    require(amountInUSDCents >= minContributionInUSDCents);
+
+    if(assignedBonusRates[_beneficiary] == 0) {
+      require(amountInUSDCents >= minContributionInUSDCents);
+      assignedBonusRates[_beneficiary] = getBonusPercentage(amountInUSDCents);
+    }
 
     ///Continue validating the purchase.
     super._preValidatePurchase(_beneficiary, _weiAmount);
@@ -1160,7 +1188,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
   ///@param _tokenAmount The amount of tokens wished to purchase.
   function _processPurchase(address _beneficiary, uint256 _tokenAmount) internal {
     ///amountInUSDCents is set on _preValidatePurchase
-    uint256 bonus = calculateBonus(_tokenAmount, amountInUSDCents);
+    uint256 bonus = calculateBonus(_tokenAmount, assignedBonusRates[_beneficiary]);
 
     ///Ensure that the sale does not exceed allocation.
     require(totalTokensSold.add(_tokenAmount).add(bonus) <= totalSaleAllocation);
@@ -1177,16 +1205,29 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
 
   ///@notice Calculates bonus.
   ///@param _tokenAmount The total amount in VRH tokens.
-  ///@param _cents The amount in US dollar cents.
-  function calculateBonus(uint256 _tokenAmount, uint256 _cents) public pure returns (uint256) {
-    if(_cents >= 25000000) {
-      return _tokenAmount.mul(50).div(100);
-    } else if(_cents >= 10000000) {
-      return _tokenAmount.mul(40).div(100);
-    } else if(_cents >=1500000){
-      return _tokenAmount.mul(35).div(100);
-    } else {
-      return 0;
+  ///@param _percentage bonus percentage.
+  function calculateBonus(uint256 _tokenAmount, uint256 _percentage) public pure returns (uint256) {
+    return _tokenAmount.mul(_percentage).div(100);
+  }
+
+  ///@notice Sets the bonus structure.
+  ///The bonus limits must be in decreasing order.
+  function setBonuses(uint[] _bonusLimits, uint[] _bonusPercentages) public onlyAdmin {
+    require(_bonusLimits.length == _bonusPercentages.length);
+    require(_bonusPercentages.length == 3);
+    for(uint8 i=0;i<_bonusLimits.length;i++) {
+      bonusLimits[i] = _bonusLimits[i];
+      bonusPercentages[i] = _bonusPercentages[i];
+    }
+  }
+
+
+  ///@notice Gets the bonus applicable for the supplied dollar cent value.
+  function getBonusPercentage(uint _cents) view public returns(uint256) {
+    for(uint8 i=0;i<bonusLimits.length;i++) {
+      if(_cents >= bonusLimits[i]) {
+        return bonusPercentages[i];
+      }
     }
   }
 
@@ -1237,7 +1278,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
     //This stops admins from stealing the allocated bonus of the investors.
     ///The bonus VRH tokens should remain in this contract.
     if(isVRH) {
-      balance = balance.sub(bonusRemaining());
+      balance = balance.sub(getRemainingBonus());
     }
 
     require(erc20.transfer(msg.sender, balance));
@@ -1257,8 +1298,9 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
       require(token.transfer(msg.sender, unsold));
     }
 
-    emit Finalized();
     isFinalized = true;
+
+    emit Finalized();
   }
 
   ///@notice Signifies whether or not the private sale has ended.
@@ -1268,7 +1310,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
   }
 
   ///@dev Reverts the finalization logic.
-  ///@notice Use finalizeCrowdsale instead.
+  ///Use finalizeCrowdsale instead.
   function finalization() internal {
     revert();
   }
@@ -1279,18 +1321,24 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
   }
 
   ///@notice Enables the admins to withdraw Ethers present in this contract.
+  ///@param _amount Amount of Ether in wei value to withdraw.
   function withdrawFunds(uint256 _amount) external whenNotPaused onlyAdmin {
     require(_amount <= address(this).balance);
+
     msg.sender.transfer(_amount);
 
     emit FundsWithdrawn(msg.sender, _amount);
   }
 
+  ///@notice Adjusts the closing time of the crowdsale.
+  ///@param _closingTime The timestamp when the crowdsale is closed.
   function changeClosingTime(uint256 _closingTime) external whenNotPaused onlyAdmin {
+    emit ClosingTimeChanged(_closingTime, closingTime);
+    
     closingTime = _closingTime;
   }
 
-  function tokenRemainingForSale() public view returns(uint256) {
+  function getRemainingTokensForSale() public view returns(uint256) {
     return totalSaleAllocation.sub(totalTokensSold);
   }
 }

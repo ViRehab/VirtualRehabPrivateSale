@@ -39,6 +39,9 @@ contract ERC20 public creditsToken;
 uint256 public totalTokensSold;
 uint256 public totalSaleAllocation;
 uint256 public minContributionInUSDCents;
+mapping(address => uint256) public assignedBonusRates;
+uint256[3] public bonusLimits;
+uint256[3] public bonusPercentages;
 bool public initialized;
 
 //private members
@@ -48,8 +51,9 @@ uint256 private amountInUSDCents;
 **Events**
 
 ```js
-event MinimumContributionChanged(uint256 _newContribution, uint256 _oldContribution);
 event SaleInitialized();
+event MinimumContributionChanged(uint256 _newContribution, uint256 _oldContribution);
+event ClosingTimeChanged(uint256 _newClosingTime, uint256 _oldClosingTime);
 event FundsWithdrawn(address indexed _wallet, uint256 _amount);
 event ERC20Withdrawn(address indexed _contract, uint256 _amount);
 event TokensAllocatedForSale(uint256 _newAllowance, uint256 _oldAllowance);
@@ -69,6 +73,8 @@ event TokensAllocatedForSale(uint256 _newAllowance, uint256 _oldAllowance);
 - [_preValidatePurchase](#_prevalidatepurchase)
 - [_processPurchase](#_processpurchase)
 - [calculateBonus](#calculatebonus)
+- [setBonuses](#setbonuses)
+- [getBonusPercentage](#getbonuspercentage)
 - [convertToCents](#converttocents)
 - [_getTokenAmount](#_gettokenamount)
 - [getTokenAmountForWei](#gettokenamountforwei)
@@ -80,7 +86,7 @@ event TokensAllocatedForSale(uint256 _newAllowance, uint256 _oldAllowance);
 - [_forwardFunds](#_forwardfunds)
 - [withdrawFunds](#withdrawfunds)
 - [changeClosingTime](#changeclosingtime)
-- [tokenRemainingForSale](#tokenremainingforsale)
+- [getRemainingTokensForSale](#getremainingtokensforsale)
 
 ### initializePrivateSale
 
@@ -165,7 +171,7 @@ function _processPurchase(address _beneficiary, uint256 _tokenAmount) internal
 Calculates bonus.
 
 ```js
-function calculateBonus(uint256 _tokenAmount, uint256 _cents) public pure
+function calculateBonus(uint256 _tokenAmount, uint256 _percentage) public pure
 returns(uint256)
 ```
 
@@ -174,7 +180,38 @@ returns(uint256)
 | Name        | Type           | Description  |
 | ------------- |------------- | -----|
 | _tokenAmount | uint256 | The total amount in VRH tokens. | 
-| _cents | uint256 | The amount in US dollar cents. | 
+| _percentage | uint256 | bonus percentage. | 
+
+### setBonuses
+
+Sets the bonus structure.
+The bonus limits must be in decreasing order.
+
+```js
+function setBonuses(uint256[] _bonusLimits, uint256[] _bonusPercentages) public onlyAdmin
+```
+
+**Arguments**
+
+| Name        | Type           | Description  |
+| ------------- |------------- | -----|
+| _bonusLimits | uint256[] |  | 
+| _bonusPercentages | uint256[] |  | 
+
+### getBonusPercentage
+
+Gets the bonus applicable for the supplied dollar cent value.
+
+```js
+function getBonusPercentage(uint256 _cents) public view
+returns(uint256)
+```
+
+**Arguments**
+
+| Name        | Type           | Description  |
+| ------------- |------------- | -----|
+| _cents | uint256 |  | 
 
 ### convertToCents
 
@@ -276,6 +313,7 @@ Returns true if the private sale has ended.
 
 :small_red_triangle: overrides [FinalizableCrowdsale.finalization](FinalizableCrowdsale.md#finalization)
 
+Reverts the finalization logic.
 Use finalizeCrowdsale instead.
 
 ```js
@@ -304,9 +342,11 @@ function withdrawFunds(uint256 _amount) external whenNotPaused onlyAdmin
 
 | Name        | Type           | Description  |
 | ------------- |------------- | -----|
-| _amount | uint256 |  | 
+| _amount | uint256 | Amount of Ether in wei value to withdraw. | 
 
 ### changeClosingTime
+
+Adjusts the closing time of the crowdsale.
 
 ```js
 function changeClosingTime(uint256 _closingTime) external whenNotPaused onlyAdmin
@@ -316,12 +356,12 @@ function changeClosingTime(uint256 _closingTime) external whenNotPaused onlyAdmi
 
 | Name        | Type           | Description  |
 | ------------- |------------- | -----|
-| _closingTime | uint256 |  | 
+| _closingTime | uint256 | The timestamp when the crowdsale is closed. | 
 
-### tokenRemainingForSale
+### getRemainingTokensForSale
 
 ```js
-function tokenRemainingForSale() public view
+function getRemainingTokensForSale() public view
 returns(uint256)
 ```
 

@@ -14,8 +14,8 @@ bool public paused;
 **Events**
 
 ```js
-event Pause();
-event Unpause();
+event Paused();
+event Unpaused();
 ```
 
 ## Modifiers
