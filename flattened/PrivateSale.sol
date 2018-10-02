@@ -1,19 +1,4 @@
-/*
-Copyright 2018 Virtual Rehab (http://virtualrehab.co)
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-    http://www.apache.org/licenses/LICENSE-2.0
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
-
 pragma solidity 0.4.24;
-
-
 
 /**
  * @title SafeMath
@@ -64,12 +49,6 @@ library SafeMath {
     return c;
   }
 }
-
-
-
-
-
-
 
 /**
  * @title Ownable
@@ -133,16 +112,6 @@ contract Ownable {
   }
 }
 
-
-
-
-
-
-
-
-
-
-
 /**
  * @title ERC20Basic
  * @dev Simpler version of ERC20 interface
@@ -154,8 +123,6 @@ contract ERC20Basic {
   function transfer(address _to, uint256 _value) public returns (bool);
   event Transfer(address indexed from, address indexed to, uint256 value);
 }
-
-
 
 /**
  * @title ERC20 interface
@@ -175,13 +142,6 @@ contract ERC20 is ERC20Basic {
     uint256 value
   );
 }
-
-
-
-
-
-
-
 
 /**
  * @title SafeERC20
@@ -221,8 +181,6 @@ library SafeERC20 {
     require(_token.approve(_spender, _value));
   }
 }
-
-
 
 /**
  * @title Crowdsale
@@ -421,8 +379,6 @@ contract Crowdsale {
   }
 }
 
-
-
 /**
  * @title TimedCrowdsale
  * @dev Crowdsale accepting contributions only within a time frame.
@@ -482,8 +438,6 @@ contract TimedCrowdsale is Crowdsale {
 
 }
 
-
-
 /**
  * @title FinalizableCrowdsale
  * @dev Extension of Crowdsale where an owner can do extra work
@@ -519,43 +473,6 @@ contract FinalizableCrowdsale is Ownable, TimedCrowdsale {
   }
 
 }
-
-/*
-Copyright 2018 Binod Nirvan
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
-
-
-/*
-Copyright 2018 Binod Nirvan
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
-
-
- 
-
 
 /*
 Copyright 2018 Binod Nirvan
@@ -654,6 +571,27 @@ contract CustomAdmin is Ownable {
   }
 }
 
+/*
+Copyright 2018 Binod Nirvan
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+ */
+
+
+ 
+
+
+
 
 
 ///@title This contract enables you to create pausable mechanism to stop in case of emergency.
@@ -687,6 +625,25 @@ contract CustomPausable is CustomAdmin {
     emit Unpaused();
   }
 }
+
+/*
+Copyright 2018 Binod Nirvan
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+ */
+
+
+
 
 ///@title This contract enables to maintain a list of whitelisted wallets.
 contract CustomWhitelist is CustomPausable {
@@ -750,6 +707,7 @@ contract CustomWhitelist is CustomPausable {
     }
   }
 }
+
 /*
 Copyright 2018 Binod Nirvan, Subramanian Venkatesan
 
@@ -982,23 +940,45 @@ contract BonusHolder is CustomPausable {
   }
 }
 
+/*
+Copyright 2018 Virtual Rehab (http://virtualrehab.co)
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+ */
+
+
+
+
+
+
+
+
+
+
 
 
 ///@title Virtual Rehab Private Sale.
 ///@author Binod Nirvan, Subramanian Venkatesan (http://virtualrehab.co)
 ///@notice This contract enables contributors to participate in Virtual Rehab Private Sale.
-/// 
+///
 ///The Virtual Rehab Private Sale provides early investors with an opportunity
 ///to take part into the Virtual Rehab token sale ahead of the pre-sale and main sale launch.
 ///All early investors are expected to successfully complete KYC and whitelisting
 ///to contribute to the Virtual Rehab token sale.
-/// 
+///
 ///US investors must be accredited investors and must provide all requested documentation
 ///to validate their accreditation. We, unfortunately, do not accept contributions
 ///from non-accredited investors within the US along with any contribution
 ///from China, Republic of Korea, and New Zealand. Any questions or additional information needed
 ///can be sought by sending an e-mail to investors＠virtualrehab.co.
-/// 
+///
 ///Accepted Currencies: Ether, Binance Coin, Credits Token.
 contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPrice, BonusHolder, FinalizableCrowdsale, CustomWhitelist {
   ///@notice The ERC20 token contract of Binance Coin. Must be: 0xB8c77482e45F1F44dE1745F52C74426C631bDD52
@@ -1279,6 +1259,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
     ///The bonus VRH tokens should remain in this contract.
     if(isVRH) {
       balance = balance.sub(getRemainingBonus());
+      changeClosingTime(now);
     }
 
     require(erc20.transfer(msg.sender, balance));
@@ -1334,7 +1315,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
   ///@param _closingTime The timestamp when the crowdsale is closed.
   function changeClosingTime(uint256 _closingTime) external whenNotPaused onlyAdmin {
     emit ClosingTimeChanged(_closingTime, closingTime);
-    
+
     closingTime = _closingTime;
   }
 
