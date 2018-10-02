@@ -96,7 +96,7 @@ function removeManyAdmins(address[] _accounts) external onlyAdmin
 
 | Name        | Type           | Description  |
 | ------------- |------------- | -----|
-| _accounts | address[] | The wallet addresses to add to the administrator list. | 
+| _accounts | address[] | The wallet addresses to remove from the administrator list. | 
 
 ## Contracts
 

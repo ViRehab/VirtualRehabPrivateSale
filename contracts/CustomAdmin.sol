@@ -78,7 +78,7 @@ contract CustomAdmin is Ownable {
 
 
   ///@notice Removes multiple addresses to the administrator list.
-  ///@param _accounts The wallet addresses to add to the administrator list.
+  ///@param _accounts The wallet addresses to remove from the administrator list.
   function removeManyAdmins(address[] _accounts) external onlyAdmin {
     for(uint8 i=0; i<_accounts.length; i++) {
       address account = _accounts[i];
