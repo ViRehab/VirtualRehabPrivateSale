@@ -317,6 +317,7 @@ contract PrivateSale is TokenPrice, EtherPrice, BinanceCoinPrice, CreditsTokenPr
     ///The bonus VRH tokens should remain in this contract.
     if(isVRH) {
       balance = balance.sub(getRemainingBonus());
+      changeClosingTime(now);
     }
 
     require(erc20.transfer(msg.sender, balance));
