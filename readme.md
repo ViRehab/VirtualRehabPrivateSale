@@ -56,7 +56,9 @@ Some of Virtual Rehab's notable successes include the following:
 - Selected as one of Canada’s most promising high-growth life sciences companies (Dose of the Valley, CA)
 - Featured by Microsoft’s leadership team at the Microsoft Inspire Innovation Session
 - Nominated by The Wall Street Journal for the WSJ D.LIVE Startup Showcase (Laguna Beach, CA)
-- Ranked by Spanish media as the first option for training correctional officers and rehabilitation of offenders using virtual reality 
+- Ranked by Spanish media as the first option for training correctional officers and rehabilitation of offenders using virtual reality
+- Founder awarded with the "Expert" status by the United Nations Global Sustainable Consumption & Production (SCP) Programme with focus on Sustainable Lifestyle and Education
+- Selected as one of the top innovative companies in Montreal, Quebec, Canada and will be included within the Montreal Innovation Ecosystem publication
 - Featured by the media across 28 countries worldwide
 
 Thank you for taking the time to learn more about Virtual Rehab. We appreciate your interest in what we do.
