@@ -3,7 +3,7 @@
 This repository contains additional information pertaining to the Virtual Rehab Private Sale.
 
 
-The Virtual Rehab Private Sale provides early investors with an opportunity to take part into the Virtual Rehab token sale ahead of the pre-sale and main sale launch. All early investors are expected to successfully complete KYC and whitelisting to contribute to the Virtual Rehab token sale. US investors must be accredited investors and must provide all requested documentation to validate their accreditation. We, unfortunately, do not accept contributions from non-accredited investors within the US along with any contribution from China, Republic of Korea, and New Zealand. Any questions or additional information needed can be sought by sending an e-mail to investors@virtualrehab.co.
+The Virtual Rehab Private Sale provides early investors with an opportunity to take part into the Virtual Rehab token sale ahead of the pre-sale and main sale launch. All early investors are expected to successfully complete KYC and whitelisting to contribute to the Virtual Rehab token sale. US investors must be accredited investors and must provide all requested documentation to validate their accreditation. We, unfortunately, do not accept contributions from non-accredited investors within the US along with any contribution from Canada, China, Republic of Korea, and New Zealand. Any questions or additional information needed can be sought by sending an e-mail to investors@virtualrehab.co.
 
 
 ## Private Sale Detail
