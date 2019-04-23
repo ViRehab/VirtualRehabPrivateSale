@@ -6,12 +6,17 @@ This repository contains additional information pertaining to the Virtual Rehab 
 The Virtual Rehab Private Sale provides early investors with an opportunity to take part into the Virtual Rehab token sale ahead of the pre-sale and main sale launch. All early investors are expected to successfully complete KYC and whitelisting to contribute to the Virtual Rehab token sale. US investors must be accredited investors and must provide all requested documentation to validate their accreditation. We, unfortunately, do not accept contributions from non-accredited investors within the US along with any contribution from Canada, China, Republic of Korea, and New Zealand. Any questions or additional information needed can be sought by sending an e-mail to investors@virtualrehab.co.
 
 
+PRIVATE SALE IS OFFICIALLY CLOSED. VIRTUAL REHAB HAS REACHED ITS SOFT CAP.
+
+THANK YOU FOR YOUR SUPPORT AND FOR MAKING THIS A SUCCESSFUL PRIVATE SALE.
+
+
 ## Private Sale Detail
 
 **Timing**
 
 ```git
-All Contributions to the Private Sale will be accepted until October 31st at 6:00 PM EST / 10:00 PM GMT / 11:00 PM CET
+All Contributions to the Private Sale will be accepted until officially closed by the Virtual Rehab team.
 ```
 
 
