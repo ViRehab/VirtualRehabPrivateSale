@@ -39,16 +39,25 @@ Thank you in advance for your support.
 
 # About Virtual Rehab
 
-Virtual Rehab's evidence-based solution leverages the advancements in virtual reality, artificial intelligence, and blockchain technologies for pain management, prevention of substance use disorders, and rehabilitation of repeat offenders. 
-
-Our all-encompassing solution currently serves the B2B market (Rehab Centers, Hospitals, Correctional Departments, etc.). In addition, post-ICO, using blockchain technology, we will also be able to reach out to these vulnerable populations directly (B2C market), to offer help and to offer incentives through the use of Virtual Rehab's ERC20 $VRH utility token.
+Virtual Rehab's evidence-based solution leverages the advancements in virtual reality, artificial intelligence, and blockchain technologies for psychological rehabilitation of vulnerable populations (pain management, prevention of substance use disorders, enhancement of autistic individuals’ communication skills, and rehabilitation of repeat offenders).
 
 Virtual Rehab's all-encompassing solution covers the following pillars:
 
 - Virtual Reality - A virtual simulation of the real world using cognitive behavior and exposure therapy to trigger and to cope with temptations
 - Artificial Intelligence - A unique expert system to identify areas of risk, to make treatment recommendations, and to predict post-therapy behavior
 - Blockchain - A secure network to ensure privacy and decentralization of all data and all information relevant to vulnerable populations
-- $VRH Token - An ERC-20 utility token that empowers users to purchase services and to be rewarded for seeking help through Virtual Rehab’s online portal
+- VRH Token - An ERC20 utility token that empowers users to purchase services and to be rewarded for seeking help through Virtual Rehab’s online portal
+
+The VRH token has four use cases:
+ 
+-	Allows users to order and download programs from Virtual Rehab Online Portal
+-	Allows users to request additional analysis (using Virtual Rehab unique expert system, which uses Artificial Intelligence) of executed programs
+-	Incentivizes users with VRH tokens reward for seeking help and counselling from medical doctors, psychologists, and therapists (Proof of Therapy)
+-	Allows users to pay for services received at the Virtual Rehab Therapy Center (VRTC)
+
+The VRH token's utility has been confirmed by a Maltese law firm to be a Virtual Financial Asset (VFA) and not a financial instrument per the below Tweet:
+
+https://twitter.com/ViRehab/status/1130867718276734976
 
 Some of Virtual Rehab's notable successes include the following:
 
@@ -62,8 +71,9 @@ Some of Virtual Rehab's notable successes include the following:
 - Featured by Microsoft’s leadership team at the Microsoft Inspire Innovation Session
 - Nominated by The Wall Street Journal for the WSJ D.LIVE Startup Showcase (Laguna Beach, CA)
 - Ranked by Spanish media as the first option for training correctional officers and rehabilitation of offenders using virtual reality
-- Founder awarded with the "Expert" status by the United Nations Global Sustainable Consumption & Production (SCP) Programme with focus on Sustainable Lifestyle and Education
-- Selected as one of the top innovative companies in Montreal, Quebec, Canada and will be included within the Montreal Innovation Ecosystem publication
+-	Founder awarded with the "Expert" status by the United Nations Global Sustainable Consumption & Production (SCP) Programme with focus on Sustainable Lifestyle and Education
+-	Selected as one of the top innovative companies in Montreal, Quebec, Canada and will be included within the Montreal Innovation Ecosystem publication
+-	Ranked 1st in “Top 10 To Watch” by England’s 21Cryptos Magazine – the leading Cryptocurrency and Blockchain magazine, with monthly content from dozens of the industry's experts, public figures, and traders
 - Featured by the media across 28 countries worldwide
 
 Thank you for taking the time to learn more about Virtual Rehab. We appreciate your interest in what we do.
