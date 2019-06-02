@@ -48,6 +48,14 @@ Virtual Rehab's all-encompassing solution covers the following pillars:
 - Blockchain - A secure network to ensure privacy and decentralization of all data and all information relevant to vulnerable populations
 - VRH Token - An ERC20 utility token that empowers users to purchase services and to be rewarded for seeking help through Virtual Rehab’s online portal
 
+The Virtual Rehab (VRH) token has been created as a centralized currency to be used within the Virtual Rehab network. Users will be able to purchase and sell VRH tokens in exchanges. The token follows the standards of Ethereum ERC20 standard token. Its design follows the widely adopted token implementation standards. This allows token holders to easily store and manage their VRH tokens using existing solutions including ERC20-compatible Ethereum wallets.
+
+When dealing with the most vulnerable populations out there, privacy and security of information/data shared, become extremely important. Unfortunately, as of today, this information is publicly available and could be accessed through online databases which expose the identities of these vulnerable populations. As a result, this prevents these populations from re-integrating back into society and becoming an effective part of it as well.
+
+Fortunately, this level of privacy/data protection can all be made possible when integrating blockchain technology as part of the Virtual Rehab solution. We will not gather the first name or the last name of these vulnerable populations - they will be associated with a wallet address. The only information which will be gathered are the age, gender, race, biometrics (heart rate, blood pressure, biodermal activity), and eye-tracking. This will ensure complete HIPAA compliance and anonymity of these vulnerable populations information/data.
+
+Moreover, Virtual Rehab is solving an even bigger problem which is data sharing among medical institutions, correctional departments, researchers, and patients worldwide. As of today, this data cannot be accessed due to privacy and patient protection laws. However, with our Virtual Rehab solution, everyone will have access to this information, which is completely anonymous and would allow for a database of input data and metrics to be accessed, which can further enhance existing research in the area of mental health through the global collaboration of researchers and medical professionals from around the world. Patients will also be able to access this data and find some synergies or relations with their existing symptoms and attempt to apply some best practices accordingly.
+
 The VRH token has four use cases:
  
 -	Allows users to order and download programs from Virtual Rehab Online Portal
