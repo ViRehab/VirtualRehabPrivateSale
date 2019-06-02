@@ -92,7 +92,7 @@ Thank you for taking the time to learn more about Virtual Rehab. We appreciate y
 | Total Supply | 336.225 million VRH |
 | Maximum Supply | 400 million VRH |
 | Circulating Supply | TBA |
-| Contributions Accepted In | ETH / BNB / CS |
+| Contributions Accepted In | ETH / BNB / CS / FIAT |
 | Contract Address | 0x0914b7ae021c229b7A51fF936f8FFc8C81fbCEA7 |
 
 
