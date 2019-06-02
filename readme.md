@@ -89,10 +89,11 @@ Thank you for taking the time to learn more about Virtual Rehab. We appreciate y
 | Name     | Virtual Rehab Token  |
 | Ticker | VRH |
 | Decimals | 18 |
+| Total Supply | 336.225 million VRH |
 | Maximum Supply | 400 million VRH |
 | Circulating Supply | TBA |
-| Contributions Accepted In | ETH / BNB |
-| Contract Address | TBA |
+| Contributions Accepted In | ETH / BNB / CS |
+| Contract Address | 0x0914b7ae021c229b7A51fF936f8FFc8C81fbCEA7 |
 
 
 
